@@ -1,33 +1,122 @@
 
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>مدونتي البسيطة</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let loggedInUser = localStorage.getItem("loggedInUser");
+            if (loggedInUser) {
+                alert("مرحبًا " + loggedInUser + "! يتم تحويلك إلى لوحة التحكم.");
+                window.location.href = "dashboard.html";
+            }
+        });
+
+        function createAccount() {
+            let idNumber = document.getElementById("id_number").value;
+            let confirmIdNumber = document.getElementById("confirm_id_number").value;
+            let password = document.getElementById("password").value;
+            let confirmPassword = document.getElementById("confirm_password").value;
+            
+            if (idNumber.trim() === "" || confirmIdNumber.trim() === "" || password.trim() === "" || confirmPassword.trim() === "") {
+                alert("يرجى ملء جميع الحقول!");
+                return;
+            }
+            
+            if (!/^[0-9]{12}$/.test(idNumber)) {
+                alert("يجب أن يتكون رقم الإقامة من 12 رقمًا فقط!");
+                return;
+            }
+            
+            if (idNumber !== confirmIdNumber) {
+                alert("رقم الإقامة غير متطابق!");
+                return;
+            }
+            
+            let users = JSON.parse(localStorage.getItem("users")) || {};
+            
+            if (users[idNumber]) {
+                alert("رقم الإقامة مسجل بالفعل، الرجاء استخدام رقم آخر!");
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert("كلمة المرور غير متطابقة!");
+                return;
+            }
+            
+            if (password.length < 8) {
+                alert("يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل!");
+                return;
+            }
+            
+            let encryptedPassword = CryptoJS.SHA256(password).toString();
+            users[idNumber] = encryptedPassword;
+            localStorage.setItem("users", JSON.stringify(users));
+            alert("تم إنشاء الحساب بنجاح!");
+            window.location.href = "login.html";
+        }
+
+        function login() {
+            let idNumber = document.getElementById("login_id_number").value;
+            let password = document.getElementById("login_password").value;
+            
+            let users = JSON.parse(localStorage.getItem("users")) || {};
+            let storedPassword = users[idNumber];
+            
+            if (!storedPassword) {
+                alert("رقم الإقامة غير مسجل!");
+                return;
+            }
+            
+            let encryptedInputPassword = CryptoJS.SHA256(password).toString();
+            
+            if (encryptedInputPassword === storedPassword) {
+                localStorage.setItem("loggedInUser", idNumber);
+                alert("تم تسجيل الدخول بنجاح!");
+                window.location.href = "dashboard.html";
+            } else {
+                alert("رقم الإقامة أو كلمة المرور غير صحيحة!");
+            }
+        }
+    </script>
 </head>
 <body>
-  <header>
-    <h1>مرحبًا بك في ضاحيتي</h1>
-    <nav>
-      <a href="index.html">الرئيسية</a>
-      <a href="#">من نحنومن انتمنا</a>
-    </nav>
-  </header>
-
-  <main>
-    <article>
-      <h2>أول تدوينة</h2>
-      <p>مرحبًا، هذه أول تدوينة لي على المدونة اليدوية!</p>
-    </article>
-    <article>
-      <h2>تدوينة اخيرة</h2>
-      <p>هذا مثال آخر لتدوينة جديدة يمكنك تعديلها أو حذفها.</p>
-    </article>
-  </main>
-
-  <footer>
-    <p>حقوق النشر &copy; 2025 - مدونتي</p>
-  </footer>
+    <h2>إنشاء حساب</h2>
+    <label for="id_number">رقم الإقامة:</label>
+    <input type="text" id="id_number" placeholder="أدخل رقم الإقامة (12 رقمًا)" maxlength="12">
+    <br>
+    <label for="confirm_id_number">تأكيد رقم الإقامة:</label>
+    <input type="text" id="confirm_id_number" placeholder="أعد إدخال رقم الإقامة" maxlength="12">
+    <br>
+    <label for="password">كلمة المرور:</label>
+    <input type="password" id="password" placeholder="أدخل كلمة المرور">
+    <br>
+    <label for="confirm_password">تأكيد كلمة المرور:</label>
+    <input type="password" id="confirm_password" placeholder="أعد إدخال كلمة المرور">
+    <br>
+    <button onclick="createAccount()">إنشاء حساب</button>
+    
+    <h2>تسجيل الدخول</h2>
+    <label for="login_id_number">رقم الإقامة:</label>
+    <input type="text" id="login_id_number" placeholder="أدخل رقم الإقامة" maxlength="12">
+    <br>
+    <label for="login_password">كلمة المرور:</label>
+    <input type="password" id="login_password" placeholder="أدخل كلمة المرور">
+    <br>
+    <button onclick="login()">تسجيل الدخول</button>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
