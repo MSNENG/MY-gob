@@ -1,6 +1,27 @@
 <!DOCTYPE html>
 <html lang="ar">
-<head>
+<// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+  authDomain: "my-gob.firebaseapp.com",
+  projectId: "my-gob",
+  storageBucket: "my-gob.firebasestorage.app",
+  messagingSenderId: "464127979375",
+  appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+  measurementId: "G-W2XBV7XH66"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مدونة ضاحيتي</title>
@@ -64,7 +85,40 @@
                 }, 1000); // الانتظار 1 ثانية قبل إزالة الرسالة
             }, 3000); // الانتظار 3 ثوانٍ قبل إخفاء الرسالة
         }
+        <div id="auth-section">
+  <input type="email" id="email" placeholder="البريد الإلكتروني" />
+  <input type="password" id="password" placeholder="كلمة المرور" />
+  <button onclick="signUp()">تسجيل</button>
+  <button onclick="signIn()">دخول</button>
+
     </script>
+    <script>
+  function signUp() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        alert("تم إنشاء الحساب بنجاح");
+      })
+      .catch((error) => {
+        alert("خطأ: " + error.message);
+      });
+  }
+
+  function signIn() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        alert("تم تسجيل الدخول بنجاح");
+      })
+      .catch((error) => {
+        alert("خطأ: " + error.message);
+      });
+  }
+</script>
+
 
 </body>
+    
 </html>
