@@ -204,6 +204,80 @@
       <a href="#">اتصل بنا</a>
     </div>
   </div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>الرئيسية - مدونة ضاحيتي</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // التحقق من أن المستخدم مسجل دخول
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        // المستخدم غير مسجل، الرجوع إلى صفحة الدخول
+        window.location.href = "index.html";
+      }
+    });
+
+    // زر تسجيل الخروج
+    window.logout = async function () {
+      try {
+        await signOut(auth);
+        alert("تم تسجيل الخروج");
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("حدث خطأ أثناء تسجيل الخروج: " + error.message);
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .logout-button {
+      background-color: #e53935;
+      color: white;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .logout-button:hover {
+      background-color: #b71c1c;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>مرحبًا بك في مدونة ضاحيتي</h1>
+  <p>أنت الآن مسجل دخولك</p>
+
+  <button class="logout-button" onclick="logout()">تسجيل الخروج</button>
+
+</body>
+</html>
 
 </body>
 </html>
