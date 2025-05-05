@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مدونة ضاحيتي</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ضاحيتي</title>
 
   <!-- Firebase SDK -->
   <script type="module">
-    // استيراد مكتبات Firebase المطلوبة
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
@@ -24,7 +23,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // تسجيل مستخدم
     window.signUp = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
@@ -33,7 +31,6 @@
         .catch(error => alert("خطأ: " + error.message));
     };
 
-    // تسجيل دخول
     window.signIn = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
@@ -48,18 +45,23 @@
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 50px;
-      background-color: #f0f0f0;
+      background-color: #e9e5dd;
     }
 
-    .welcome-message {
-      font-size: 24px;
-      font-weight: bold;
-      color: #333;
-      transition: opacity 2s ease-out;
+    .logo-image {
+      width: 200px;
+      animation: blinkFade 4s ease-in-out forwards;
+    }
+
+    @keyframes blinkFade {
+      0% { opacity: 1; }
+      50% { opacity: 0.2; }
+      100% { opacity: 0; }
     }
 
     .action-buttons {
       margin-top: 20px;
+      display: none;
     }
 
     .button {
@@ -94,11 +96,11 @@
 </head>
 <body>
 
-  <div id="welcomeMessage" class="welcome-message">
-    مرحبًا في مدونة "ضاحيتي"!
+  <div id="welcomeMessage">
+    <img src="6be08c5f-4d5c-4374-be83-5897fe3c14d3.png" alt="شعار ضاحي" class="logo-image" />
   </div>
 
-  <div id="actionButtons" class="action-buttons" style="display: none;">
+  <div id="actionButtons" class="action-buttons">
     <button class="button" onclick="document.getElementById('auth-section').style.display='block'">إنشاء حساب</button>
     <button class="button" onclick="document.getElementById('auth-section').style.display='block'">تسجيل دخول جديد</button>
   </div>
@@ -111,16 +113,12 @@
   </div>
 
   <script>
-    // عرض الرسالة الترحيبية ثم إظهار الأزرار
     window.onload = function () {
       setTimeout(function () {
         const msg = document.getElementById('welcomeMessage');
-        msg.style.opacity = '0';
-        setTimeout(function () {
-          msg.style.display = 'none';
-          document.getElementById('actionButtons').style.display = 'block';
-        }, 1000);
-      }, 3000);
+        msg.style.display = 'none';
+        document.getElementById('actionButtons').style.display = 'block';
+      }, 4000); // بعد انتهاء تأثير الوميض والاختفاء
     };
   </script>
 </body>
