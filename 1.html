@@ -32,7 +32,12 @@
     // إظهار أو إخفاء حقل التعليق
     function toggleCommentBox() {
       const commentBox = document.getElementById("commentBox");
-      commentBox.style.display = commentBox.style.display === "none" || commentBox.style.display === "" ? "block" : "none";
+      // إذا كانت الحقل مخفي، نعرضه، وإذا كان ظاهرًا نخفيه
+      if (commentBox.style.display === "none" || commentBox.style.display === "") {
+        commentBox.style.display = "block";
+      } else {
+        commentBox.style.display = "none";
+      }
     }
 
     // إرسال التعليق وحفظه في Firebase
@@ -59,7 +64,7 @@
         // مسح الحقول بعد إرسال التعليق
         document.getElementById("name").value = "";
         document.getElementById("comment").value = "";
-        document.getElementById("commentBox").style.display = "none";
+        document.getElementById("commentBox").style.display = "none"; // إخفاء الحقل بعد الإرسال
       } catch (error) {
         alert("حدث خطأ أثناء إرسال التعليق: " + error.message);
       }
@@ -131,6 +136,20 @@
     }
 
     #commentBox button:hover {
+      background-color: #3700b3;
+    }
+
+    button {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 24px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
       background-color: #3700b3;
     }
   </style>
