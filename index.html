@@ -1,110 +1,128 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>واجهة ضاحي</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مدونة ضاحيتي</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    // استيراد مكتبات Firebase المطلوبة
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // تسجيل مستخدم
+    window.signUp = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(() => alert("تم إنشاء الحساب بنجاح"))
+        .catch(error => alert("خطأ: " + error.message));
+    };
+
+    // تسجيل دخول
+    window.signIn = function () {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(() => alert("تم تسجيل الدخول بنجاح"))
+        .catch(error => alert("خطأ: " + error.message));
+    };
+  </script>
+
   <style>
     body {
-      background-color: #dfddd3;
-      margin: 0;
-      font-family: 'Cairo', sans-serif;
-      direction: rtl;
-      overflow: hidden;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background-color: #f0f0f0;
     }
 
-    #splash {
-      position: fixed;
-      top: 0;
-      left: 0;
-      height: 100vh;
-      width: 100vw;
-      background-color: #dfddd3;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-      animation: fadeOut 2s ease 3s forwards;
+    .welcome-message {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      transition: opacity 2s ease-out;
     }
 
-    #splash img {
-      width: 200px;
+    .action-buttons {
+      margin-top: 20px;
     }
 
-    @keyframes fadeOut {
-      to {
-        opacity: 0;
-        visibility: hidden;
-      }
-    }
-
-    .button-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      opacity: 0;
-      animation: showButtons 1s ease 4s forwards;
-    }
-
-    @keyframes showButtons {
-      to {
-        opacity: 1;
-      }
-    }
-
-    .glow-button {
-      padding: 15px 40px;
-      font-size: 20px;
+    .button {
+      background-color: #4CAF50;
+      color: white;
+      font-size: 18px;
+      padding: 10px 20px;
       border: none;
-      border-radius: 10px;
       cursor: pointer;
-      background: linear-gradient(145deg, #3d3d3d, #292929);
-      color: #fff;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s ease;
-      position: relative;
+      margin: 10px;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
     }
 
-    .glow-button::before {
-      content: "";
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: linear-gradient(45deg, #8f8f8f, #484848, #8f8f8f);
-      z-index: -1;
-      filter: blur(10px);
-      opacity: 0;
-      transition: 0.3s ease;
-      border-radius: 12px;
+    .button:hover {
+      background-color: #45a049;
     }
 
-    .glow-button:hover::before {
-      opacity: 1;
+    #auth-section {
+      margin-top: 30px;
+      display: none;
     }
 
-    .glow-button:hover {
-      transform: translateY(-2px);
+    input {
+      display: block;
+      margin: 10px auto;
+      padding: 10px;
+      font-size: 16px;
+      width: 250px;
     }
   </style>
 </head>
 <body>
 
-  <!-- شاشة البداية -->
-  <div id="splash">
-    <img src="logo.jpeg" alt="شعار ضاحي" />
+  <div id="welcomeMessage" class="welcome-message">
+    مرحبًا في مدونة "ضاحيتي"!
   </div>
 
-  <!-- أزرار الدخول -->
-  <div class="button-container">
-    <button class="glow-button" onclick="window.location.href='login.html'">تسجيل دخول</button>
-    <button class="glow-button" onclick="window.location.href='register.html'">إنشاء حساب</button>
+  <div id="actionButtons" class="action-buttons" style="display: none;">
+    <button class="button" onclick="document.getElementById('auth-section').style.display='block'">إنشاء حساب</button>
+    <button class="button" onclick="document.getElementById('auth-section').style.display='block'">تسجيل دخول جديد</button>
   </div>
 
+  <div id="auth-section">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" />
+    <input type="password" id="password" placeholder="كلمة المرور" />
+    <button class="button" onclick="signUp()">تسجيل</button>
+    <button class="button" onclick="signIn()">دخول</button>
+  </div>
+
+  <script>
+    // عرض الرسالة الترحيبية ثم إظهار الأزرار
+    window.onload = function () {
+      setTimeout(function () {
+        const msg = document.getElementById('welcomeMessage');
+        msg.style.opacity = '0';
+        setTimeout(function () {
+          msg.style.display = 'none';
+          document.getElementById('actionButtons').style.display = 'block';
+        }, 1000);
+      }, 3000);
+    };
+  </script>
 </body>
 </html>
