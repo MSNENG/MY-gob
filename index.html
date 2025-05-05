@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title> تعليقك</title>
+  <title>مدونة ضاحيتي</title>
+
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-    // تكوين Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
       authDomain: "my-gob.firebaseapp.com",
@@ -20,156 +21,178 @@
       measurementId: "G-W2XBV7XH66"
     };
 
-    // تهيئة Firebase
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // عند تحميل الصفحة
-    window.onload = function() {
-      loadComments();  // تحميل التعليقات من Firebase
+    let isSignUp = true;
+
+    window.toggleMode = function () {
+      isSignUp = !isSignUp;
+      document.getElementById("fullName").style.display = isSignUp ? "block" : "none";
+      document.getElementById("phone").style.display = isSignUp ? "block" : "none";
+      document.getElementById("confirmPassword").style.display = isSignUp ? "block" : "none";
+      document.getElementById("actionBtn").innerText = isSignUp ? "تسجيل حساب جديد" : "تسجيل دخول";
+      document.getElementById("toggleText").innerText = isSignUp ? "لديك حساب؟ تسجيل الدخول" : "ليس لديك حساب؟ إنشاء حساب";
     };
 
-    // إظهار أو إخفاء حقل التعليق
-    function toggleCommentBox() {
-      const commentBox = document.getElementById("commentBox");
-      // إذا كانت الحقل مخفي، نعرضه، وإذا كان ظاهرًا نخفيه
-      if (commentBox.style.display === "none" || commentBox.style.display === "") {
-        commentBox.style.display = "block";
+    window.handleAction = function () {
+      if (isSignUp) {
+        signUp();
       } else {
-        commentBox.style.display = "none";
+        signIn();
       }
-    }
+    };
 
-    // إرسال التعليق وحفظه في Firebase
-    async function submitComment() {
-      const name = document.getElementById("name").value.trim();
-      const comment = document.getElementById("comment").value.trim();
+    async function signUp() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const fullName = document.getElementById("fullName").value.trim();
+      const phone = document.getElementById("phone").value.trim();
 
-      if (!name || !comment) {
-        alert("يرجى ملء الحقول");
+      if (!email || !password || !confirmPassword || !fullName || !phone) {
+        alert("يرجى تعبئة جميع الحقول");
         return;
       }
 
-      // إضافة تعليق جديد إلى Firestore
+      if (password.length < 6) {
+        alert("كلمة المرور يجب أن تكون 6 خانات على الأقل");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert("كلمتا المرور غير متطابقتين");
+        return;
+      }
+
+      if (!/^05\d{8}$/.test(phone)) {
+        alert("رقم الهاتف يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
+        return;
+      }
+
       try {
-        await addDoc(collection(db, "comments"), {
-          name: name,
-          comment: comment,
-          createdAt: new Date()  // تاريخ إضافة التعليق
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          fullName,
+          phone,
+          email
         });
 
-        // عرض التعليق في الصفحة
-        displayComment({ name, comment });
-
-        // مسح الحقول بعد إرسال التعليق
-        document.getElementById("name").value = "";
-        document.getElementById("comment").value = "";
-        document.getElementById("commentBox").style.display = "none"; // إخفاء الحقل بعد الإرسال
+        alert("تم إنشاء الحساب بنجاح");
+        window.location.href = "home.html";
       } catch (error) {
-        alert("حدث خطأ أثناء إرسال التعليق: " + error.message);
+        if (error.code === "auth/email-already-in-use") {
+          alert("البريد الإلكتروني مستخدم مسبقًا");
+        } else if (error.code === "auth/invalid-email") {
+          alert("صيغة البريد الإلكتروني غير صحيحة");
+        } else {
+          alert("حدث خطأ: " + error.message);
+        }
       }
     }
 
-    // عرض التعليق في الصفحة
-    function displayComment(comment) {
-      const commentElement = document.createElement("div");
-      commentElement.classList.add("comment");
-      commentElement.textContent = `${comment.name}: ${comment.comment}`;
+    async function signIn() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
 
-      const commentsContainer = document.getElementById("commentsContainer");
-      commentsContainer.prepend(commentElement);
+      if (!email || !password) {
+        alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("تم تسجيل الدخول بنجاح");
+        window.location.href = "home.html";
+      } catch (error) {
+        if (error.code === "auth/user-not-found") {
+          alert("الحساب غير موجود");
+        } else if (error.code === "auth/wrong-password") {
+          alert("كلمة المرور غير صحيحة");
+        } else {
+          alert("حدث خطأ: " + error.message);
+        }
+      }
     }
 
-    // تحميل التعليقات من Firebase وعرضها في الصفحة
-    async function loadComments() {
-      const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        displayComment({ name: data.name, comment: data.comment });
-      });
-    }
+    window.addEventListener("DOMContentLoaded", () => {
+      toggleMode(); // Start with sign-up mode
+    });
   </script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      background-color: #f5f5f5;
+      background-color: #f0f0f0;
       text-align: center;
-      padding: 50px;
+      padding: 40px;
     }
 
-    h1 {
-      color: #6200ea;
-      font-size: 36px;
+    .form-container {
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 420px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
-    .comment {
-      background-color: #e0e0e0;
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      width: 80%;
-      margin: 10px auto;
-    }
-
-    #commentBox {
-      display: none;
-      margin-top: 20px;
-    }
-
-    #commentBox input, #commentBox textarea {
+    input {
       width: 100%;
       padding: 10px;
-      margin: 5px 0;
+      margin: 8px 0;
       font-size: 16px;
-      border-radius: 6px;
       border: 1px solid #ccc;
-    }
-
-    #commentBox button {
-      background-color: #6200ea;
-      color: white;
-      padding: 10px 20px;
       border-radius: 6px;
-      cursor: pointer;
     }
 
-    #commentBox button:hover {
-      background-color: #3700b3;
-    }
-
-    button {
+    .button {
       background-color: #6200ea;
       color: white;
+      padding: 12px;
+      width: 100%;
       border: none;
-      padding: 10px 20px;
-      font-size: 24px;
       border-radius: 6px;
+      font-size: 18px;
       cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s ease;
     }
 
-    button:hover {
+    .button:hover {
       background-color: #3700b3;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .toggle-link {
+      margin-top: 15px;
+      color: #6200ea;
+      cursor: pointer;
+      display: inline-block;
     }
   </style>
 </head>
 <body>
 
-  <h1>إضافة تعليق</h1>
+  <div class="form-container">
+    <h2>مدونة ضاحيتي</h2>
 
-  <!-- زر "+" لفتح حقل التعليق -->
-  <button onclick="toggleCommentBox()">+</button>
+    <input type="text" id="fullName" placeholder="الاسم الكامل" />
+    <input type="text" id="phone" placeholder="رقم الهاتف (يبدأ بـ 05)" />
+    <input type="email" id="email" placeholder="البريد الإلكتروني" />
+    <input type="password" id="password" placeholder="كلمة المرور" />
+    <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" />
 
-  <!-- حقل إضافة تعليق -->
-  <div id="commentBox">
-    <input type="text" id="name" placeholder="أدخل اسمك" />
-    <textarea id="comment" rows="4" placeholder="أدخل تعليقك"></textarea>
-    <button onclick="submitComment()">إرسال التعليق</button>
+    <button class="button" id="actionBtn" onclick="handleAction()">تسجيل حساب جديد</button>
+    <div class="toggle-link" id="toggleText" onclick="toggleMode()">لديك حساب؟ تسجيل الدخول</div>
   </div>
-
-  <!-- عرض التعليقات -->
-  <div id="commentsContainer"></div>
 
 </body>
 </html>
