@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title></title>
+  <title>مدونة ضاحيتي</title>
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -29,8 +28,23 @@
     window.signUp = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+      
+      // التحقق من صحة المدخلات
+      if (!email || !password) {
+        alert("يرجى إدخال البريد الإلكتروني وكلمة المرور.");
+        return;
+      }
+      
+      if (password.length < 6) {
+        alert("يجب أن تكون كلمة المرور أكثر من 6 أحرف.");
+        return;
+      }
+
       createUserWithEmailAndPassword(auth, email, password)
-        .then(() => alert("تم إنشاء الحساب بنجاح"))
+        .then(() => {
+          alert("تم إنشاء الحساب بنجاح");
+          window.location.href = "home.html"; // الانتقال إلى الصفحة الرئيسية بعد إنشاء الحساب
+        })
         .catch(error => alert("خطأ: " + error.message));
     };
 
@@ -38,8 +52,18 @@
     window.signIn = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+      
+      // التحقق من صحة المدخلات
+      if (!email || !password) {
+        alert("يرجى إدخال البريد الإلكتروني وكلمة المرور.");
+        return;
+      }
+
       signInWithEmailAndPassword(auth, email, password)
-        .then(() => alert("تم تسجيل الدخول بنجاح"))
+        .then(() => {
+          alert("تم تسجيل الدخول بنجاح");
+          window.location.href = "home.html"; // الانتقال إلى الصفحة الرئيسية بعد تسجيل الدخول
+        })
         .catch(error => alert("خطأ: " + error.message));
     };
   </script>
