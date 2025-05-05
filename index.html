@@ -3,165 +3,108 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ضاحي</title>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-
-    window.signUp = function () {
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirm-password").value;
-
-      // التحقق من الاسم
-      if (name === "") {
-        alert("يرجى إدخال الاسم");
-        return;
-      }
-
-      // التحقق من رقم الهاتف
-      const phoneRegex = /^05\d{8}$/;
-      if (!phoneRegex.test(phone)) {
-        alert("رقم الهاتف يجب أن يتكون من 10 أرقام ويبدأ بـ 05");
-        return;
-      }
-
-      // التحقق من طول كلمة المرور
-      if (password.length < 4) {
-        alert("كلمة المرور يجب ألا تقل عن 4 خانات");
-        return;
-      }
-
-      // التحقق من تطابق كلمتي المرور
-      if (password !== confirmPassword) {
-        alert("كلمة المرور غير متطابقة");
-        return;
-      }
-
-      // إنشاء الحساب
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          alert("تم إنشاء الحساب بنجاح");
-        })
-        .catch(error => {
-          alert("خطأ: " + error.message);
-        });
-    };
-
-    window.signIn = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => alert("تم تسجيل الدخول بنجاح"))
-        .catch(error => alert("خطأ: " + error.message));
-    };
-  </script>
-
+  <title>واجهة ضاحي</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      background-color: #dfddd3;
       margin: 0;
-      padding: 0;
-      text-align: center;
-      background-color: #e9e5dd;
+      font-family: 'Cairo', sans-serif;
+      direction: rtl;
+      overflow: hidden;
     }
 
-    .splash-screen {
+    #splash {
       position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #e9e5dd;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background-color: #dfddd3;
       display: flex;
-      align-items: center;
       justify-content: center;
-      z-index: 999;
-      animation: fadeOut 4s forwards;
+      align-items: center;
+      z-index: 10;
+      animation: fadeOut 2s ease 3s forwards;
     }
 
-    .logo-image {
-      width: 220px;
+    #splash img {
+      width: 200px;
     }
 
     @keyframes fadeOut {
-      0% { opacity: 1; }
-      80% { opacity: 1; }
-      100% { opacity: 0; visibility: hidden; }
+      to {
+        opacity: 0;
+        visibility: hidden;
+      }
     }
 
-    #auth-section {
-      display: none;
-      padding-top: 80px;
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      opacity: 0;
+      animation: showButtons 1s ease 4s forwards;
     }
 
-    .button {
-      background-color: #4CAF50;
-      color: white;
-      font-size: 18px;
-      padding: 10px 20px;
+    @keyframes showButtons {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .glow-button {
+      padding: 15px 40px;
+      font-size: 20px;
       border: none;
+      border-radius: 10px;
       cursor: pointer;
-      margin: 10px;
-      border-radius: 5px;
-      transition: background-color 0.3s ease;
+      background: linear-gradient(145deg, #3d3d3d, #292929);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      position: relative;
     }
 
-    .button:hover {
-      background-color: #45a049;
+    .glow-button::before {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #8f8f8f, #484848, #8f8f8f);
+      z-index: -1;
+      filter: blur(10px);
+      opacity: 0;
+      transition: 0.3s ease;
+      border-radius: 12px;
     }
 
-    input {
-      display: block;
-      margin: 10px auto;
-      padding: 10px;
-      font-size: 16px;
-      width: 250px;
+    .glow-button:hover::before {
+      opacity: 1;
+    }
+
+    .glow-button:hover {
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
 
   <!-- شاشة البداية -->
-  <div id="splash" class="splash-screen">
-    <img src="logo.png" alt="شعار ضاحي" class="logo-image" />
+  <div id="splash">
+    <img src="logo.jpeg" alt="شعار ضاحي" />
   </div>
 
-  <!-- نموذج تسجيل الدخول/التسجيل -->
-  <div id="auth-section">
-    <input type="text" id="name" placeholder="الاسم الكامل" />
-    <input type="email" id="email" placeholder="البريد الإلكتروني" />
-    <input type="text" id="phone" placeholder="رقم الهاتف" />
-    <input type="password" id="password" placeholder="كلمة المرور" />
-    <input type="password" id="confirm-password" placeholder="تأكيد كلمة المرور" />
-    <button class="button" onclick="signUp()">تسجيل</button>
-    <button class="button" onclick="signIn()">دخول</button>
+  <!-- أزرار الدخول -->
+  <div class="button-container">
+    <button class="glow-button" onclick="window.location.href='login.html'">تسجيل دخول</button>
+    <button class="glow-button" onclick="window.location.href='register.html'">إنشاء حساب</button>
   </div>
 
-  <script>
-    window.onload = function () {
-      setTimeout(function () {
-        document.getElementById('splash').style.display = 'none';
-        document.getElementById('auth-section').style.display = 'block';
-      }, 4000);
-    };
-  </script>
 </body>
 </html>
