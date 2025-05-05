@@ -4,7 +4,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>إضافة تعليق</title>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
+    // تكوين Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    // تهيئة Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // عند تحميل الصفحة
+    window.onload = function() {
+      loadComments();  // تحميل التعليقات من Firebase
+    };
+
+    // إظهار أو إخفاء حقل التعليق
+    function toggleCommentBox() {
+      const commentBox = document.getElementById("commentBox");
+      commentBox.style.display = commentBox.style.display === "none" || commentBox.style.display === "" ? "block" : "none";
+    }
+
+    // إرسال التعليق وحفظه في Firebase
+    async function submitComment() {
+      const name = document.getElementById("name").value.trim();
+      const comment = document.getElementById("comment").value.trim();
+
+      if (!name || !comment) {
+        alert("يرجى ملء الحقول");
+        return;
+      }
+
+      // إضافة تعليق جديد إلى Firestore
+      try {
+        await addDoc(collection(db, "comments"), {
+          name: name,
+          comment: comment,
+          createdAt: new Date()  // تاريخ إضافة التعليق
+        });
+
+        // عرض التعليق في الصفحة
+        displayComment({ name, comment });
+
+        // مسح الحقول بعد إرسال التعليق
+        document.getElementById("name").value = "";
+        document.getElementById("comment").value = "";
+        document.getElementById("commentBox").style.display = "none";
+      } catch (error) {
+        alert("حدث خطأ أثناء إرسال التعليق: " + error.message);
+      }
+    }
+
+    // عرض التعليق في الصفحة
+    function displayComment(comment) {
+      const commentElement = document.createElement("div");
+      commentElement.classList.add("comment");
+      commentElement.textContent = `${comment.name}: ${comment.comment}`;
+
+      const commentsContainer = document.getElementById("commentsContainer");
+      commentsContainer.prepend(commentElement);
+    }
+
+    // تحميل التعليقات من Firebase وعرضها في الصفحة
+    async function loadComments() {
+      const q = query(collection(db, "comments"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        displayComment({ name: data.name, comment: data.comment });
+      });
+    }
+  </script>
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -18,116 +99,58 @@
       font-size: 36px;
     }
 
-    .comment-section {
-      margin-top: 20px;
+    .comment {
+      background-color: #e0e0e0;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      width: 80%;
+      margin: 10px auto;
     }
 
-    .comment-box {
+    #commentBox {
       display: none;
       margin-top: 20px;
-      padding: 15px;
-      background-color: #fff;
-      border-radius: 6px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
-    .comment-box input, .comment-box textarea {
+    #commentBox input, #commentBox textarea {
       width: 100%;
       padding: 10px;
-      margin: 8px 0;
+      margin: 5px 0;
       font-size: 16px;
+      border-radius: 6px;
       border: 1px solid #ccc;
-      border-radius: 6px;
     }
 
-    .submit-button {
+    #commentBox button {
       background-color: #6200ea;
       color: white;
       padding: 10px 20px;
-      font-size: 18px;
-      border: none;
       border-radius: 6px;
       cursor: pointer;
     }
 
-    .submit-button:hover {
-      background-color: #4500b3;
-    }
-
-    .comment {
-      background-color: #f0f0f0;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      text-align: right;
-    }
-
-    .plus-button {
-      background-color: #6200ea;
-      color: white;
-      font-size: 24px;
-      padding: 10px 20px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
-    }
-
-    .plus-button:hover {
-      background-color: #4500b3;
+    #commentBox button:hover {
+      background-color: #3700b3;
     }
   </style>
 </head>
 <body>
 
-  <h1>أضف تعليقك</h1>
+  <h1>إضافة تعليق</h1>
 
-  <!-- زر + لفتح حقل التعليق -->
-  <button class="plus-button" onclick="toggleCommentBox()">+</button>
+  <!-- زر "+" لفتح حقل التعليق -->
+  <button onclick="toggleCommentBox()">+</button>
 
-  <div class="comment-section">
-    <!-- حقل إضافة تعليق -->
-    <div class="comment-box" id="commentBox">
-      <input type="text" id="name" placeholder="أدخل اسمك" />
-      <textarea id="comment" rows="4" placeholder="أكتب تعليقك هنا..."></textarea>
-      <button class="submit-button" onclick="submitComment()">إرسال التعليق</button>
-    </div>
-
-    <!-- قسم عرض التعليقات -->
-    <div id="commentsContainer"></div>
+  <!-- حقل إضافة تعليق -->
+  <div id="commentBox">
+    <input type="text" id="name" placeholder="أدخل اسمك" />
+    <textarea id="comment" rows="4" placeholder="أدخل تعليقك"></textarea>
+    <button onclick="submitComment()">إرسال التعليق</button>
   </div>
 
-  <script>
-    // إظهار أو إخفاء حقل التعليق عند الضغط على الزر "+"
-    function toggleCommentBox() {
-      const commentBox = document.getElementById("commentBox");
-      commentBox.style.display = commentBox.style.display === "none" || commentBox.style.display === "" ? "block" : "none";
-    }
-
-    // إرسال التعليق وعرضه في الصفحة
-    function submitComment() {
-      const name = document.getElementById("name").value.trim();
-      const comment = document.getElementById("comment").value.trim();
-
-      if (!name || !comment) {
-        alert("يرجى ملء الحقول");
-        return;
-      }
-
-      // إنشاء عنصر عرض التعليق
-      const commentElement = document.createElement("div");
-      commentElement.classList.add("comment");
-      commentElement.textContent = `${name}: ${comment}`;
-
-      // إضافة التعليق إلى صفحة العرض
-      const commentsContainer = document.getElementById("commentsContainer");
-      commentsContainer.prepend(commentElement);
-
-      // مسح الحقول بعد إرسال التعليق
-      document.getElementById("name").value = "";
-      document.getElementById("comment").value = "";
-      document.getElementById("commentBox").style.display = "none";
-    }
-  </script>
+  <!-- عرض التعليقات -->
+  <div id="commentsContainer"></div>
 
 </body>
 </html>
