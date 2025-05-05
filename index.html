@@ -24,16 +24,51 @@
     const auth = getAuth(app);
 
     window.signUp = function () {
-      const email = document.getElementById("email").value;
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
       const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirm-password").value;
+
+      // التحقق من الاسم
+      if (name === "") {
+        alert("يرجى إدخال الاسم");
+        return;
+      }
+
+      // التحقق من رقم الهاتف
+      const phoneRegex = /^05\d{8}$/;
+      if (!phoneRegex.test(phone)) {
+        alert("رقم الهاتف يجب أن يتكون من 10 أرقام ويبدأ بـ 05");
+        return;
+      }
+
+      // التحقق من طول كلمة المرور
+      if (password.length < 4) {
+        alert("كلمة المرور يجب ألا تقل عن 4 خانات");
+        return;
+      }
+
+      // التحقق من تطابق كلمتي المرور
+      if (password !== confirmPassword) {
+        alert("كلمة المرور غير متطابقة");
+        return;
+      }
+
+      // إنشاء الحساب
       createUserWithEmailAndPassword(auth, email, password)
-        .then(() => alert("تم إنشاء الحساب بنجاح"))
-        .catch(error => alert("خطأ: " + error.message));
+        .then(() => {
+          alert("تم إنشاء الحساب بنجاح");
+        })
+        .catch(error => {
+          alert("خطأ: " + error.message);
+        });
     };
 
     window.signIn = function () {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+
       signInWithEmailAndPassword(auth, email, password)
         .then(() => alert("تم تسجيل الدخول بنجاح"))
         .catch(error => alert("خطأ: " + error.message));
@@ -43,25 +78,38 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
       text-align: center;
-      padding: 50px;
       background-color: #e9e5dd;
     }
 
+    .splash-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #e9e5dd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: fadeOut 4s forwards;
+    }
+
     .logo-image {
-      width: 200px;
-      animation: blinkFade 4s ease-in-out forwards;
+      width: 220px;
     }
 
-    @keyframes blinkFade {
+    @keyframes fadeOut {
       0% { opacity: 1; }
-      50% { opacity: 0.2; }
-      100% { opacity: 0; }
+      80% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
     }
 
-    .action-buttons {
-      margin-top: 20px;
+    #auth-section {
       display: none;
+      padding-top: 80px;
     }
 
     .button {
@@ -80,11 +128,6 @@
       background-color: #45a049;
     }
 
-    #auth-section {
-      margin-top: 30px;
-      display: none;
-    }
-
     input {
       display: block;
       margin: 10px auto;
@@ -96,18 +139,18 @@
 </head>
 <body>
 
-  <div id="welcomeMessage">
-    <img src="6be08c5f-4d5c-4374-be83-5897fe3c14d3.png" alt="شعار ضاحي" class="logo-image" />
+  <!-- شاشة البداية -->
+  <div id="splash" class="splash-screen">
+    <img src="logo.png" alt="شعار ضاحي" class="logo-image" />
   </div>
 
-  <div id="actionButtons" class="action-buttons">
-    <button class="button" onclick="document.getElementById('auth-section').style.display='block'">إنشاء حساب</button>
-    <button class="button" onclick="document.getElementById('auth-section').style.display='block'">تسجيل دخول جديد</button>
-  </div>
-
+  <!-- نموذج تسجيل الدخول/التسجيل -->
   <div id="auth-section">
+    <input type="text" id="name" placeholder="الاسم الكامل" />
     <input type="email" id="email" placeholder="البريد الإلكتروني" />
+    <input type="text" id="phone" placeholder="رقم الهاتف" />
     <input type="password" id="password" placeholder="كلمة المرور" />
+    <input type="password" id="confirm-password" placeholder="تأكيد كلمة المرور" />
     <button class="button" onclick="signUp()">تسجيل</button>
     <button class="button" onclick="signIn()">دخول</button>
   </div>
@@ -115,10 +158,9 @@
   <script>
     window.onload = function () {
       setTimeout(function () {
-        const msg = document.getElementById('welcomeMessage');
-        msg.style.display = 'none';
-        document.getElementById('actionButtons').style.display = 'block';
-      }, 4000); // بعد انتهاء تأثير الوميض والاختفاء
+        document.getElementById('splash').style.display = 'none';
+        document.getElementById('auth-section').style.display = 'block';
+      }, 4000);
     };
   </script>
 </body>
