@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -25,21 +25,44 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // تسجيل مستخدم جديد
-    window.signUp = async function () {
+    let isSignUp = true;
+
+    window.toggleMode = function () {
+      isSignUp = !isSignUp;
+      document.getElementById("fullName").style.display = isSignUp ? "block" : "none";
+      document.getElementById("phone").style.display = isSignUp ? "block" : "none";
+      document.getElementById("confirmPassword").style.display = isSignUp ? "block" : "none";
+      document.getElementById("actionBtn").innerText = isSignUp ? "تسجيل حساب جديد" : "تسجيل دخول";
+      document.getElementById("toggleText").innerText = isSignUp ? "لديك حساب؟ تسجيل الدخول" : "ليس لديك حساب؟ إنشاء حساب";
+    };
+
+    window.handleAction = function () {
+      if (isSignUp) {
+        signUp();
+      } else {
+        signIn();
+      }
+    };
+
+    async function signUp() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
       const fullName = document.getElementById("fullName").value.trim();
       const phone = document.getElementById("phone").value.trim();
 
-      // تحقق من صحة البيانات
-      if (!email || !password || !fullName || !phone) {
+      if (!email || !password || !confirmPassword || !fullName || !phone) {
         alert("يرجى تعبئة جميع الحقول");
         return;
       }
 
       if (password.length < 6) {
         alert("كلمة المرور يجب أن تكون 6 خانات على الأقل");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert("كلمتا المرور غير متطابقتين");
         return;
       }
 
@@ -52,22 +75,26 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // حفظ بيانات المستخدم في Firestore
         await setDoc(doc(db, "users", user.uid), {
-          fullName: fullName,
-          phone: phone,
-          email: email
+          fullName,
+          phone,
+          email
         });
 
         alert("تم إنشاء الحساب بنجاح");
         window.location.href = "home.html";
       } catch (error) {
-        alert("خطأ: " + error.message);
+        if (error.code === "auth/email-already-in-use") {
+          alert("البريد الإلكتروني مستخدم مسبقًا");
+        } else if (error.code === "auth/invalid-email") {
+          alert("صيغة البريد الإلكتروني غير صحيحة");
+        } else {
+          alert("حدث خطأ: " + error.message);
+        }
       }
-    };
+    }
 
-    // تسجيل الدخول
-    window.signIn = async function () {
+    async function signIn() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
@@ -81,26 +108,36 @@
         alert("تم تسجيل الدخول بنجاح");
         window.location.href = "home.html";
       } catch (error) {
-        alert("خطأ: " + error.message);
+        if (error.code === "auth/user-not-found") {
+          alert("الحساب غير موجود");
+        } else if (error.code === "auth/wrong-password") {
+          alert("كلمة المرور غير صحيحة");
+        } else {
+          alert("حدث خطأ: " + error.message);
+        }
       }
-    };
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      toggleMode(); // Start with sign-up mode
+    });
   </script>
 
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      background-color: #f4f4f4;
+      background-color: #f0f0f0;
       text-align: center;
       padding: 40px;
     }
 
     .form-container {
       background-color: #fff;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 30px;
-      max-width: 400px;
+      max-width: 420px;
       margin: auto;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     input {
@@ -133,18 +170,28 @@
       margin-bottom: 20px;
       color: #333;
     }
+
+    .toggle-link {
+      margin-top: 15px;
+      color: #6200ea;
+      cursor: pointer;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
 
   <div class="form-container">
-    <h2>إنشاء حساب / تسجيل دخول</h2>
+    <h2>مدونة ضاحيتي</h2>
+
     <input type="text" id="fullName" placeholder="الاسم الكامل" />
     <input type="text" id="phone" placeholder="رقم الهاتف (يبدأ بـ 05)" />
     <input type="email" id="email" placeholder="البريد الإلكتروني" />
     <input type="password" id="password" placeholder="كلمة المرور" />
-    <button class="button" onclick="signUp()">تسجيل حساب جديد</button>
-    <button class="button" onclick="signIn()">تسجيل دخول</button>
+    <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" />
+
+    <button class="button" id="actionBtn" onclick="handleAction()">تسجيل حساب جديد</button>
+    <div class="toggle-link" id="toggleText" onclick="toggleMode()">لديك حساب؟ تسجيل الدخول</div>
   </div>
 
 </body>
