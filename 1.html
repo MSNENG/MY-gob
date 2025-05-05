@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>الصفحة 1</title>
+  <title>إضافة تعليق</title>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -17,24 +18,116 @@
       font-size: 36px;
     }
 
-    a {
-      display: inline-block;
-      margin-top: 30px;
-      text-decoration: none;
+    .comment-section {
+      margin-top: 20px;
+    }
+
+    .comment-box {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .comment-box input, .comment-box textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .submit-button {
       background-color: #6200ea;
       color: white;
       padding: 10px 20px;
-      border-radius: 6px;
       font-size: 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
-    a:hover {
+    .submit-button:hover {
+      background-color: #4500b3;
+    }
+
+    .comment {
+      background-color: #f0f0f0;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      text-align: right;
+    }
+
+    .plus-button {
+      background-color: #6200ea;
+      color: white;
+      font-size: 24px;
+      padding: 10px 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .plus-button:hover {
       background-color: #4500b3;
     }
   </style>
 </head>
 <body>
-  <h1>أهلاً بك في الصفحة 1</h1>
-  <a href="home.html">العودة إلى الصفحة الرئيسية</a>
+
+  <h1>أضف تعليقك</h1>
+
+  <!-- زر + لفتح حقل التعليق -->
+  <button class="plus-button" onclick="toggleCommentBox()">+</button>
+
+  <div class="comment-section">
+    <!-- حقل إضافة تعليق -->
+    <div class="comment-box" id="commentBox">
+      <input type="text" id="name" placeholder="أدخل اسمك" />
+      <textarea id="comment" rows="4" placeholder="أكتب تعليقك هنا..."></textarea>
+      <button class="submit-button" onclick="submitComment()">إرسال التعليق</button>
+    </div>
+
+    <!-- قسم عرض التعليقات -->
+    <div id="commentsContainer"></div>
+  </div>
+
+  <script>
+    // إظهار أو إخفاء حقل التعليق عند الضغط على الزر "+"
+    function toggleCommentBox() {
+      const commentBox = document.getElementById("commentBox");
+      commentBox.style.display = commentBox.style.display === "none" || commentBox.style.display === "" ? "block" : "none";
+    }
+
+    // إرسال التعليق وعرضه في الصفحة
+    function submitComment() {
+      const name = document.getElementById("name").value.trim();
+      const comment = document.getElementById("comment").value.trim();
+
+      if (!name || !comment) {
+        alert("يرجى ملء الحقول");
+        return;
+      }
+
+      // إنشاء عنصر عرض التعليق
+      const commentElement = document.createElement("div");
+      commentElement.classList.add("comment");
+      commentElement.textContent = `${name}: ${comment}`;
+
+      // إضافة التعليق إلى صفحة العرض
+      const commentsContainer = document.getElementById("commentsContainer");
+      commentsContainer.prepend(commentElement);
+
+      // مسح الحقول بعد إرسال التعليق
+      document.getElementById("name").value = "";
+      document.getElementById("comment").value = "";
+      document.getElementById("commentBox").style.display = "none";
+    }
+  </script>
+
 </body>
 </html>
