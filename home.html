@@ -2,26 +2,207 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>الصفحة الرئيسية</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>الصفحة الرئيسية - ضاحيتي</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser = null;
+
+    // عند تحميل الصفحة
+    window.onload = () => {
+      const userNameSpan = document.getElementById("user-name");
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          userNameSpan.textContent = user.email;
+          loadPosts(user.uid);
+        } else {
+          window.location.href = "index.html";
+        }
+      });
+
+      document.getElementById("logout-btn").addEventListener("click", () => {
+        signOut(auth).then(() => {
+          window.location.href = "index.html";
+        });
+      });
+
+      document.getElementById("addPostBtn").addEventListener("click", async () => {
+        const content = document.getElementById("postInput").value.trim();
+        if (content && currentUser) {
+          await addDoc(collection(db, "posts"), {
+            uid: currentUser.uid,
+            content: content,
+            createdAt: serverTimestamp()
+          });
+          document.getElementById("postInput").value = "";
+          loadPosts(currentUser.uid);
+        }
+      });
+    };
+
+    // تحميل التدوينات من Firestore
+    async function loadPosts(uid) {
+      const postsContainer = document.getElementById("posts");
+      postsContainer.innerHTML = ""; // مسح التدوينات السابقة
+
+      const q = query(collection(db, "posts"), where("uid", "==", uid));
+      const querySnapshot = await getDocs(q);
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const postElement = document.createElement("div");
+        postElement.className = "post";
+        postElement.textContent = data.content;
+        postsContainer.prepend(postElement);
+      });
+    }
+  </script>
+
   <style>
     body {
-      background-color: #f0f0f0;
       font-family: 'Cairo', sans-serif;
+      margin: 0;
+      background-color: #f5f5f5;
       direction: rtl;
-      padding: 20px;
     }
-    .welcome-message {
-      text-align: center;
-      font-size: 24px;
-      margin-top: 50px;
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+
+    .section {
+      background-color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+
+    .section h3 {
+      margin-top: 0;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      resize: none;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #4500b3;
+    }
+
+    .post {
+      background-color: #f0f0f0;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+
+    .links a {
+      display: block;
+      margin: 5px 0;
+      color: #6200ea;
+      text-decoration: none;
+    }
+
+    .links a:hover {
+      text-decoration: underline;
+    }
+
+    .gallery {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .gallery div {
+      width: 100px;
+      height: 100px;
+      background-color: #ddd;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
 
-  <div class="welcome-message">
-    <h1>مرحبا بك في الصفحة الرئيسية!</h1>
+  <header>
+    <span>مرحبًا، <span id="user-name">...</span></span>
+    <button id="logout-btn">تسجيل خروج</button>
+  </header>
+
+  <div class="container">
+    <!-- قسم التدوينات -->
+    <div class="section">
+      <h3>التدوينات</h3>
+      <textarea id="postInput" rows="3" placeholder="اكتب تدوينتك هنا..."></textarea>
+      <button id="addPostBtn">إضافة تدوينة</button>
+      <div id="posts" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- معرض صور المجتمع -->
+    <div class="section">
+      <h3>صور المجتمع</h3>
+      <div class="gallery">
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </div>
+
+    <!-- روابط سريعة -->
+    <div class="section links">
+      <h3>روابط سريعة</h3>
+      <a href="#">من نحن</a>
+      <a href="#">سياسة الخصوصية</a>
+      <a href="#">اتصل بنا</a>
+    </div>
   </div>
 
 </body>
