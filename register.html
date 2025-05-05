@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>إنشاء حساب</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #dfddd3;
+      margin: 0;
+      font-family: 'Cairo', sans-serif;
+      direction: rtl;
+      padding: 20px;
+    }
+
+    .form-container {
+      max-width: 400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .submit-button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .submit-button:hover {
+      background-color: #45a049;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>إنشاء حساب</h2>
+    <form id="registerForm" onsubmit="return validateForm()">
+      <input type="email" id="email" class="input-field" placeholder="البريد الإلكتروني" required />
+      <input type="text" id="name" class="input-field" placeholder="الاسم" required />
+      <input type="password" id="password" class="input-field" placeholder="كلمة المرور" required />
+      <input type="password" id="confirmPassword" class="input-field" placeholder="إعادة كلمة المرور" required />
+      <input type="tel" id="phone" class="input-field" placeholder="رقم الهاتف" required />
+      <button type="submit" class="submit-button">إنشاء حساب</button>
+    </form>
+
+    <div id="errorMessages" class="error"></div>
+  </div>
+
+  <script>
+    function validateForm() {
+      document.getElementById('errorMessages').innerHTML = '';
+      const email = document.getElementById('email').value;
+      const name = document.getElementById('name').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const phone = document.getElementById('phone').value;
+      let errors = [];
+
+      if (password.length < 4) errors.push('كلمة المرور يجب أن تكون على الأقل 4 خانات.');
+      if (password !== confirmPassword) errors.push('كلمة المرور وإعادة كلمة المرور غير متطابقتين.');
+      const phoneRegex = /^05\d{8}$/;
+      if (!phoneRegex.test(phone)) errors.push('رقم الهاتف يجب أن يبدأ بـ "05" ويتكون من 10 أرقام.');
+
+      if (errors.length > 0) {
+        document.getElementById('errorMessages').innerHTML = errors.join('<br>');
+        return false;
+      }
+
+      alert('تم إنشاء الحساب بنجاح!');
+      window.location.href = 'main.html';  // الانتقال إلى الصفحة الرئيسية
+      return true;
+    }
+  </script>
+
+</body>
+</html>
