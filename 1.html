@@ -1,1 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إضافة تعليق</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js"></script>
+</head>
+<body>
+
+  <h2>أضف تعليقك</h2>
+  
+  <!-- نموذج التعليق -->
+  <form id="commentForm">
+    <textarea id="commentText" placeholder="أضف تعليقك هنا..." required></textarea>
+    <button type="submit">أرسل</button>
+  </form>
+
+  <h3>التعليقات:</h3>
+  <div id="commentsList"></div>
+
+  <script>
+    // إعداد Firebase
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // تهيئة Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // التحقق من تسجيل الدخول
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        console.log("المستخدم مسجل دخول: " + user.email);
+      } else {
+        console.log("لم يتم تسجيل الدخول");
+      }
+    });
+
+    // وظيفة لإرسال التعليق إلى Firestore
+    document.getElementById('commentForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const commentText = document.getElementById('commentText').value;
+      const user = auth.currentUser;
+
+      if (user && commentText) {
+        // إضافة التعليق إلى Firestore
+        db.collection('comments').add({
+          userId: user.uid,
+          topicId: 'topic1',  // معرف الموضوع يمكن تغييره حسب الحاجة
+          comment: commentText,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        })
+        .then(() => {
+          console.log("التعليق تم إضافته بنجاح");
+          document.getElementById('commentText').value = ''; // مسح الحقل بعد الإرسال
+          loadComments(); // تحميل التعليقات بعد الإضافة
+        })
+        .catch((error) => {
+          console.error("خطأ في إضافة التعليق: ", error);
+        });
+      } else {
+        alert("يجب أن تكون مسجلًا للدخول لإضافة تعليق.");
+      }
+    });
+
+    // وظيفة لتحميل التعليقات من Firestore
+    function loadComments() {
+      db.collection('comments').where("topicId", "==", "topic1").orderBy("timestamp")
+        .onSnapshot((snapshot) => {
+          const commentsList = document.getElementById('commentsList');
+          commentsList.innerHTML = '';  // مسح التعليقات السابقة
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const commentElement = document.createElement('div');
+            commentElement.innerHTML = `<strong>تعليق من: ${data.userId}</strong><p>${data.comment}</p>`;
+            commentsList.appendChild(commentElement);
+          });
+        });
+    }
+
+    // تحميل التعليقات عند تحميل الصفحة
+    loadComments();
+  </script>
+
+</body>
+</html>
 
