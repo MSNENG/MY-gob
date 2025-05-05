@@ -53,7 +53,7 @@
       const commentText = document.getElementById('commentText').value;
       const user = auth.currentUser;
 
-      if (user && commentText) {
+      if (user && commentText.trim()) {
         // إضافة التعليق إلى Firestore
         db.collection('comments').add({
           userId: user.uid,
@@ -70,7 +70,7 @@
           console.error("خطأ في إضافة التعليق: ", error);
         });
       } else {
-        alert("يجب أن تكون مسجلًا للدخول لإضافة تعليق.");
+        alert("يجب أن تكون مسجلًا للدخول وإدخال تعليق.");
       }
     });
 
@@ -96,4 +96,3 @@
 
 </body>
 </html>
-
