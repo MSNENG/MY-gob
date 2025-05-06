@@ -46,12 +46,9 @@
       });
 
       // إعداد أزرار التنقل
-      for (let i = 1; i <= 7; i++) {
-        const btn = document.getElementById("btn-" + i);
-        btn.addEventListener("click", () => {
-          window.location.href = `${i}.html`;
-        });
-      }
+      document.getElementById("btn-messages").addEventListener("click", () => {
+        window.location.href = "messages.html"; // الانتقال لصفحة الرسائل
+      });
     };
   </script>
 
@@ -86,10 +83,6 @@
       cursor: pointer;
     }
 
-    .logout-btn:hover {
-      background-color: #b71c1c;
-    }
-
     .buttons-container {
       display: flex;
       flex-wrap: wrap;
@@ -121,7 +114,7 @@
   </header>
 
   <div class="buttons-container">
-    <button id="btn-1" class="number-btn">رسائل</button>
+    <button id="btn-messages" class="number-btn">رسائل</button> <!-- الزر الجديد -->
     <button id="btn-2" class="number-btn">2</button>
     <button id="btn-3" class="number-btn">3</button>
     <button id="btn-4" class="number-btn">4</button>
