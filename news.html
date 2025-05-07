@@ -133,7 +133,8 @@
     const userData = userDoc.data();
     const userName = userData?.name || "مستخدم";
 
-    await db.collection("messages").add({
+    // هنا تم تعديل مكان التخزين إلى "news-comment"
+    await db.collection("news-comment").add({
       text,
       userId: currentUser.uid,
       userName,
@@ -146,7 +147,8 @@
   function listenToMessages() {
     const messagesList = document.getElementById("messagesList");
 
-    db.collection("messages").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+    // هنا تم تعديل المكان إلى "news-comment"
+    db.collection("news-comment").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
       messagesList.innerHTML = "";
 
       if (snapshot.empty) {
@@ -175,7 +177,7 @@
           deleteBtn.textContent = "حذف";
           deleteBtn.onclick = async () => {
             if (confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-              await db.collection("messages").doc(doc.id).delete();
+              await db.collection("news-comment").doc(doc.id).delete();
             }
           };
           messageDiv.appendChild(deleteBtn);
@@ -211,7 +213,7 @@
                 return;
               }
 
-              await db.collection("messages").doc(doc.id).update({ text: newText });
+              await db.collection("news-comment").doc(doc.id).update({ text: newText });
             };
           };
 
