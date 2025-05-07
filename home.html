@@ -54,7 +54,7 @@
           return;
         }
 
-        userNameSpan.textContent = user.email;
+        userNameSpan.textContent = data.name || "مستخدم";
 
       } else {
         alert("لم يتم العثور على بيانات المستخدم.");
@@ -99,23 +99,31 @@
       align-items: center;
       border-radius: 8px;
       margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     .logout-btn {
       background-color: #e53935;
       color: white;
       border: none;
-      padding: 10px 16px;
+      padding: 10px 20px;
       font-size: 16px;
-      border-radius: 6px;
+      border-radius: 10px;
       cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .logout-btn:hover {
+      background-color: #c62828;
     }
 
     .buttons-container {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 15px;
-      justify-content: center;
+      align-items: center;
+      max-width: 300px;
+      margin: 0 auto;
     }
 
     .number-btn {
@@ -124,13 +132,16 @@
       border: none;
       padding: 15px 30px;
       font-size: 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      width: 100%;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
 
     .number-btn:hover {
       background-color: #3700b3;
+      transform: translateY(-2px);
     }
   </style>
 </head>
