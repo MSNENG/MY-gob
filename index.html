@@ -26,17 +26,24 @@
     const db = getFirestore(app);
 
     window.onload = () => {
-      const loginBtn = document.getElementById("login-btn");
-      const registerBtn = document.getElementById("register-btn");
+      const loginSection = document.getElementById("login-section");
+      const registerSection = document.getElementById("register-section");
 
-      // إظهار الشعار ثم النماذج
-      setTimeout(() => {
-        document.getElementById("logo").style.display = "none";
-        document.getElementById("forms").style.display = "block";
-      }, 2500);
+      const showRegister = () => {
+        loginSection.style.display = "none";
+        registerSection.style.display = "block";
+      };
 
-      // زر تسجيل الدخول
-      loginBtn.addEventListener("click", async () => {
+      const showLogin = () => {
+        registerSection.style.display = "none";
+        loginSection.style.display = "block";
+      };
+
+      document.getElementById("toggle-to-register").onclick = showRegister;
+      document.getElementById("toggle-to-login").onclick = showLogin;
+
+      // تسجيل الدخول
+      document.getElementById("login-btn").onclick = async () => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
@@ -48,14 +55,12 @@
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
-
           const userRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(userRef);
 
           if (docSnap.exists()) {
             const data = docSnap.data();
             const paymentDate = data.paymentDate?.toDate?.();
-
             if (!paymentDate) {
               window.location.href = "payment.html";
             } else {
@@ -72,26 +77,30 @@
             alert("لم يتم العثور على بيانات المستخدم.");
           }
         } catch (error) {
-          if (error.code === "auth/user-not-found") {
-            alert("الحساب غير موجود");
-          } else if (error.code === "auth/wrong-password") {
-            alert("كلمة المرور غير صحيحة");
-          } else {
-            alert("حدث خطأ: " + error.message);
-          }
+          alert("خطأ: " + error.message);
         }
-      });
+      };
 
-      // زر إنشاء الحساب
-      registerBtn.addEventListener("click", async () => {
-        const email = document.getElementById("register-email").value.trim();
-        const password = document.getElementById("register-password").value;
-        const confirmPassword = document.getElementById("register-confirm-password").value;
-        const fullName = document.getElementById("register-name").value.trim();
-        const phone = document.getElementById("register-phone").value.trim();
+      // إنشاء حساب
+      document.getElementById("register-btn").onclick = async () => {
+        const name = document.getElementById("reg-name").value.trim();
+        const phone = document.getElementById("reg-phone").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const confirmPassword = document.getElementById("reg-confirm-password").value;
 
-        if (!email || !password || !confirmPassword || !fullName || !phone) {
-          alert("يرجى تعبئة جميع الحقول");
+        if (!name || !phone || !email || !password || !confirmPassword) {
+          alert("يرجى ملء جميع الحقول");
+          return;
+        }
+
+        if (name.split(" ").length > 4) {
+          alert("الاسم يجب ألا يزيد عن أربع كلمات");
+          return;
+        }
+
+        if (!/^05\d{8}$/.test(phone)) {
+          alert("رقم الجوال يجب أن يكون 10 أرقام ويبدأ بـ 05");
           return;
         }
 
@@ -100,51 +109,23 @@
           return;
         }
 
-        if (fullName.split(/\s+/).length > 4) {
-          alert("الاسم يجب ألا يتجاوز 4 كلمات");
-          return;
-        }
-
-        if (!/^05\d{8}$/.test(phone)) {
-          alert("رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
-          return;
-        }
-
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
 
           await setDoc(doc(db, "users", user.uid), {
-            name: fullName,
-            phone: phone,
+            name,
+            phone,
+            email,
             createdAt: new Date()
           });
 
-          alert("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
-          toggleForms();
+          alert("تم إنشاء الحساب بنجاح");
+          showLogin();
         } catch (error) {
-          if (error.code === "auth/email-already-in-use") {
-            alert("البريد الإلكتروني مستخدم بالفعل.");
-          } else if (error.code === "auth/weak-password") {
-            alert("كلمة المرور ضعيفة. يجب أن تكون 6 أحرف على الأقل.");
-          } else {
-            alert("حدث خطأ: " + error.message);
-          }
+          alert("فشل إنشاء الحساب: " + error.message);
         }
-      });
-    };
-
-    window.toggleForms = () => {
-      const loginForm = document.getElementById("login-form");
-      const registerForm = document.getElementById("register-form");
-
-      if (loginForm.style.display === "none") {
-        loginForm.style.display = "block";
-        registerForm.style.display = "none";
-      } else {
-        loginForm.style.display = "none";
-        registerForm.style.display = "block";
-      }
+      };
     };
   </script>
 
@@ -163,6 +144,7 @@
       max-width: 420px;
       margin: auto;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+      display: none;
     }
 
     input {
@@ -211,38 +193,62 @@
       font-weight: bold;
     }
 
+    .logo-container {
+      animation: fadeOut 2s 2s forwards;
+    }
+
     .logo {
-      animation: blink 2s ease-in-out infinite alternate;
-      max-width: 180px;
-      margin: 30px auto;
+      width: 150px;
+      animation: blink 2s infinite alternate;
     }
 
     @keyframes blink {
-      0% { opacity: 0; transform: scale(0.9); }
-      100% { opacity: 1; transform: scale(1.1); }
+      from { opacity: 1; }
+      to { opacity: 0.3; }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        visibility: hidden;
+        height: 0;
+        margin: 0;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- شعار ترحيبي -->
-  <div id="logo">
+  <!-- الشعار -->
+  <div class="logo-container">
     <img src="logo.jpeg" alt="شعار" class="logo" />
   </div>
 
-  <!-- النماذج -->
-  <div id="forms" style="display: none;">
-    <div class="form-container">
-      <!-- تسجيل الدخول -->
-      <div id="login-form">
-        <input type="email" id="email" placeholder="البريد الإلكتروني" />
-        <input type="password" id="password" placeholder="كلمة المرور" />
-        <button class="button" id="login-btn">تسجيل الدخول</button>
-        <div class="toggle-link" onclick="toggleForms()">ليس لديك حساب؟ إنشاء حساب</div>
-      </div>
+  <!-- نموذج تسجيل الدخول -->
+  <div id="login-section" class="form-container">
+    <input type="email" id="email" placeholder="البريد الإلكتروني" />
+    <input type="password" id="password" placeholder="كلمة المرور" />
+    <button class="button" id="login-btn">تسجيل الدخول</button>
+    <div class="toggle-link" id="toggle-to-register">ليس لديك حساب؟ إنشاء حساب</div>
+  </div>
 
-      <!-- نموذج إنشاء الحساب -->
-      <div id="register-form" style="display: none;">
-        <input type="text" id="register-name" placeholder="الاسم الكامل (بحد أقصى ٤ كلمات)" />
-        <input type="tel" id="register-phone" placeholder="رقم الجوال (05xxxxxxxx)" />
-        <input type="email" id="register-email" placeholder="البريد الإلكتروني" />
+  <!-- نموذج إنشاء الحساب -->
+  <div id="register-section" class="form-container">
+    <input type="text" id="reg-name" placeholder="الاسم الكامل" />
+    <input type="text" id="reg-phone" placeholder="رقم الجوال" />
+    <input type="email" id="reg-email" placeholder="البريد الإلكتروني" />
+    <input type="password" id="reg-password" placeholder="كلمة المرور" />
+    <input type="password" id="reg-confirm-password" placeholder="إعادة كلمة المرور" />
+    <button class="button" id="register-btn">إنشاء الحساب</button>
+    <div class="toggle-link" id="toggle-to-login">لديك حساب؟ تسجيل الدخول</div>
+  </div>
+
+  <script>
+    // إظهار النموذج بعد اختفاء الشعار
+    setTimeout(() => {
+      document.getElementById("login-section").style.display = "block";
+    }, 2500);
+  </script>
+
+</body>
+</html>
