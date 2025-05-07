@@ -29,11 +29,13 @@
       const loginBtn = document.getElementById("login-btn");
       const registerBtn = document.getElementById("register-btn");
 
+      // إظهار الشعار ثم النماذج
       setTimeout(() => {
         document.getElementById("logo").style.display = "none";
         document.getElementById("forms").style.display = "block";
       }, 2500);
 
+      // زر تسجيل الدخول
       loginBtn.addEventListener("click", async () => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
@@ -80,14 +82,21 @@
         }
       });
 
+      // زر إنشاء الحساب
       registerBtn.addEventListener("click", async () => {
         const email = document.getElementById("register-email").value.trim();
         const password = document.getElementById("register-password").value;
+        const confirmPassword = document.getElementById("register-confirm-password").value;
         const fullName = document.getElementById("register-name").value.trim();
         const phone = document.getElementById("register-phone").value.trim();
 
-        if (!email || !password || !fullName || !phone) {
+        if (!email || !password || !confirmPassword || !fullName || !phone) {
           alert("يرجى تعبئة جميع الحقول");
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          alert("كلمتا المرور غير متطابقتين");
           return;
         }
 
@@ -216,10 +225,12 @@
 </head>
 <body>
 
+  <!-- شعار ترحيبي -->
   <div id="logo">
-    <img src="1652adc8-874d-495b-bf48-1ed67ab9f2d3.jpeg" alt="شعار" class="logo" />
+    <img src="logo.jpeg" alt="شعار" class="logo" />
   </div>
 
+  <!-- النماذج -->
   <div id="forms" style="display: none;">
     <div class="form-container">
       <!-- تسجيل الدخول -->
@@ -230,17 +241,8 @@
         <div class="toggle-link" onclick="toggleForms()">ليس لديك حساب؟ إنشاء حساب</div>
       </div>
 
-      <!-- إنشاء حساب -->
+      <!-- نموذج إنشاء الحساب -->
       <div id="register-form" style="display: none;">
         <input type="text" id="register-name" placeholder="الاسم الكامل (بحد أقصى ٤ كلمات)" />
         <input type="tel" id="register-phone" placeholder="رقم الجوال (05xxxxxxxx)" />
         <input type="email" id="register-email" placeholder="البريد الإلكتروني" />
-        <input type="password" id="register-password" placeholder="كلمة المرور" />
-        <button class="button" id="register-btn">إنشاء الحساب</button>
-        <div class="toggle-link" onclick="toggleForms()">لديك حساب؟ تسجيل الدخول</div>
-      </div>
-    </div>
-  </div>
-
-</body>
-</html>
