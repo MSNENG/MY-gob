@@ -41,14 +41,14 @@
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
-          
+
           // فحص حالة الدفع بعد تسجيل الدخول
           const userRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(userRef);
 
           if (docSnap.exists()) {
             const data = docSnap.data();
-            const paymentDate = data.paymentDate?.toDate?.();
+            const paymentDate = data.paymentDate?.toDate?.(); // تأكد من تحويل التاريخ بشكل صحيح
 
             if (!paymentDate) {
               window.location.href = "payment.html";  // إذا لم يتم الدفع
