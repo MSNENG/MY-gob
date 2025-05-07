@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>أخبار الضاحية</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let userNameSpan;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const paymentDate = data.paymentDate?.toDate?.();
+
+        if (!paymentDate) {
+          window.location.href = "payment.html";
+          return;
+        }
+
+        const now = new Date();
+        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 30) {
+          alert("انتهى اشتراكك. يرجى التجديد.");
+          window.location.href = "payment.html";
+          return;
+        }
+
+        userNameSpan.textContent = data.name || "مستخدم";
+
+      } else {
+        alert("لم يتم العثور على بيانات المستخدم.");
+        window.location.href = "payment.html";
+      }
+    });
+
+    window.onload = () => {
+      userNameSpan = document.getElementById("user-name");
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          window.location.href = "index.html";
+        } catch (error) {
+          alert("خطأ أثناء تسجيل الخروج: " + error.message);
+        }
+      });
+
+      // إضافة تعليق
+      document.getElementById("btn-submit-comment").addEventListener("click", async () => {
+        const commentInput = document.getElementById("comment-input");
+        const commentText = commentInput.value.trim();
+
+        if (commentText === "") {
+          alert("يرجى كتابة تعليق قبل الإرسال.");
+          return;
+        }
+
+        try {
+          await addDoc(collection(db, "news-comments"), {
+            text: commentText,
+            userEmail: auth.currentUser.email,
+            userName: userNameSpan.textContent,
+            timestamp: serverTimestamp()
+          });
+          commentInput.value = ""; // مسح مربع النص بعد الإرسال
+        } catch (error) {
+          alert("خطأ في إرسال التعليق: " + error.message);
+        }
+      });
+
+      // عرض التعليقات
+      const commentsList = document.getElementById("comments-list");
+      const q = query(collection(db, "news-comments"), orderBy("timestamp", "desc"));
+
+      onSnapshot(q, (querySnapshot) => {
+        commentsList.innerHTML = ""; // مسح التعليقات السابقة
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const commentDiv = document.createElement("div");
+          commentDiv.classList.add("comment");
+
+          commentDiv.innerHTML = `
+            <strong>${data.userName}</strong> (${data.userEmail})<br/>
+            <span>${data.text}</span><br/>
+            <small>${data.timestamp.toDate().toLocaleString("ar-EG")}</small>
+          `;
+
+          commentsList.appendChild(commentDiv);
+        });
+      });
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+      direction: rtl;
+      text-align: center;
+    }
+
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .logout-btn {
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .logout-btn:hover {
+      background-color: #c62828;
+    }
+
+    .buttons-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .comment-box {
+      width: 80%;
+      margin: 20px auto;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .comment-btn {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .comment-btn:hover {
+      background-color: #3700b3;
+    }
+
+    .comment {
+      background-color: #fff;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .comment small {
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span>مرحبًا، <span id="user-name">...</span></span>
+    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+  </header>
+
+  <div class="buttons-container">
+    <h2>أخبار الضاحية</h2>
+
+    <!-- مربع كتابة التعليق -->
+    <textarea id="comment-input" class="comment-box" placeholder="اكتب تعليقك هنا..."></textarea>
+    <button id="btn-submit-comment" class="comment-btn">إرسال التعليق</button>
+
+    <!-- عرض التعليقات -->
+    <div id="comments-list" style="margin-top: 30px;"></div>
+  </div>
+
+</body>
+</html>
