@@ -9,6 +9,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -22,19 +23,47 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     let userNameSpan;
 
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const paymentDate = data.paymentDate?.toDate?.();
+
+        if (!paymentDate) {
+          window.location.href = "payment.html";
+          return;
+        }
+
+        const now = new Date();
+        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 30) {
+          alert("انتهى اشتراكك. يرجى التجديد.");
+          window.location.href = "payment.html";
+          return;
+        }
+
+        userNameSpan.textContent = user.email;
+
+      } else {
+        alert("لم يتم العثور على بيانات المستخدم.");
+        window.location.href = "payment.html";
+      }
+    });
+
     window.onload = () => {
       userNameSpan = document.getElementById("user-name");
-
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          userNameSpan.textContent = user.email;
-        } else {
-          window.location.href = "index.html";
-        }
-      });
 
       document.getElementById("logout-btn").addEventListener("click", async () => {
         try {
@@ -45,9 +74,8 @@
         }
       });
 
-      // إعداد أزرار التنقل
       document.getElementById("btn-messages").addEventListener("click", () => {
-        window.location.href = "messages.html"; // الانتقال لصفحة الرسائل
+        window.location.href = "messages.html";
       });
     };
   </script>
@@ -114,7 +142,7 @@
   </header>
 
   <div class="buttons-container">
-    <button id="btn-messages" class="number-btn">رسالة سنقل</button> <!-- الزر الجديد -->
+    <button id="btn-messages" class="number-btn">رسالة سنقل</button>
     <button id="btn-2" class="number-btn">2</button>
     <button id="btn-3" class="number-btn">3</button>
     <button id="btn-4" class="number-btn">4</button>
