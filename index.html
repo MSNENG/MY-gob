@@ -9,7 +9,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -82,7 +82,7 @@
         });
 
         alert("تم إنشاء الحساب بنجاح");
-        window.location.href = "home.html";
+        window.location.href = "payment.html";
       } catch (error) {
         if (error.code === "auth/email-already-in-use") {
           alert("البريد الإلكتروني مستخدم مسبقًا");
@@ -104,9 +104,30 @@
       }
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("تم تسجيل الدخول بنجاح");
-        window.location.href = "home.html";
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // 🔍 تحقق من تاريخ الدفع
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data();
+          const paymentDate = data.paymentDate?.toDate(); // تحويل Timestamp إلى Date
+
+          const now = new Date();
+          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+          if (!paymentDate || (now - paymentDate > thirtyDays)) {
+            // لم يدفع أو انتهت مدة الاشتراك
+            window.location.href = "payment.html";
+          } else {
+            window.location.href = "home.html";
+          }
+        } else {
+          alert("لم يتم العثور على بيانات المستخدم");
+        }
+
       } catch (error) {
         if (error.code === "auth/user-not-found") {
           alert("الحساب غير موجود");
