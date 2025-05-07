@@ -9,8 +9,9 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
+    // إعداد Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
       authDomain: "my-gob.firebaseapp.com",
@@ -25,70 +26,77 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
+    let currentUser;
 
-      document.getElementById("pay-btn").addEventListener("click", async () => {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, {
-            paymentDate: serverTimestamp()  // يتم تعيين التاريخ الحالي
-          });
-          alert("تم تسجيل الدفع بنجاح!");
-          window.location.href = "home.html";
-        } catch (error) {
-          alert("حدث خطأ أثناء حفظ الدفع: " + error.message);
+    window.onload = () => {
+      // التحقق من تسجيل الدخول
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUser = user;
+        } else {
+          window.location.href = "index.html"; // إن لم يكن المستخدم مسجلًا
         }
       });
-    });
+
+      // عند الضغط على زر الدفع
+      document.getElementById("pay-btn").addEventListener("click", async () => {
+        if (!currentUser) return;
+
+        const userRef = doc(db, "users", currentUser.uid);
+
+        try {
+          await setDoc(userRef, {
+            paymentDate: new Date()
+          }, { merge: true });
+
+          alert("✅ تم تسجيل الدفع بنجاح!");
+          window.location.href = "home.html";
+        } catch (error) {
+          alert("❌ فشل حفظ بيانات الدفع: " + error.message);
+        }
+      });
+    };
   </script>
 
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      background-color: #f5f5f5;
+      background-color: #f4f4f4;
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px;
     }
 
-    .container {
-      background-color: white;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    .pay-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 12px;
       max-width: 400px;
       margin: auto;
-    }
-
-    h1 {
-      color: #6200ea;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     #pay-btn {
-      background-color: #43a047;
+      background-color: #4caf50;
       color: white;
+      padding: 14px 28px;
       border: none;
-      padding: 16px;
+      border-radius: 8px;
       font-size: 18px;
-      border-radius: 10px;
       cursor: pointer;
-      margin-top: 30px;
+      transition: background-color 0.3s ease;
     }
 
     #pay-btn:hover {
-      background-color: #2e7d32;
+      background-color: #388e3c;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>صفحة الدفع</h1>
-    <p>يرجى الضغط على الزر لتأكيد الدفع. الاشتراك صالح لمدة شهر من تاريخ الدفع.</p>
-    <button id="pay-btn">تأكيد الدفع (زر وهمي)</button>
+  <div class="pay-container">
+    <h2>إتمام الدفع</h2>
+    <p>اضغط على الزر لتأكيد الدفع (وهميًا).</p>
+    <button id="pay-btn">دفع الآن</button>
   </div>
 
 </body>
