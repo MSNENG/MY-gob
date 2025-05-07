@@ -8,8 +8,8 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -25,128 +25,58 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let isSignUp = true;
+    window.onload = () => {
+      const loginForm = document.getElementById("login-form");
+      loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-    window.toggleMode = function () {
-      isSignUp = !isSignUp;
-      document.getElementById("fullName").style.display = isSignUp ? "block" : "none";
-      document.getElementById("phone").style.display = isSignUp ? "block" : "none";
-      document.getElementById("confirmPassword").style.display = isSignUp ? "block" : "none";
-      document.getElementById("actionBtn").innerText = isSignUp ? "تسجيل حساب جديد" : "تسجيل دخول";
-      document.getElementById("toggleText").innerText = isSignUp ? "لديك حساب؟ تسجيل الدخول" : "ليس لديك حساب؟ إنشاء حساب";
-    };
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
 
-    window.handleAction = function () {
-      if (isSignUp) {
-        signUp();
-      } else {
-        signIn();
-      }
-    };
-
-    async function signUp() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-      const fullName = document.getElementById("fullName").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-
-      if (!email || !password || !confirmPassword || !fullName || !phone) {
-        alert("يرجى تعبئة جميع الحقول");
-        return;
-      }
-
-      if (password.length < 6) {
-        alert("كلمة المرور يجب أن تكون 6 خانات على الأقل");
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        alert("كلمتا المرور غير متطابقتين");
-        return;
-      }
-
-      if (!/^05\d{8}$/.test(phone)) {
-        alert("رقم الهاتف يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
-        return;
-      }
-
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        await setDoc(doc(db, "users", user.uid), {
-          fullName,
-          phone,
-          email
-        });
-
-        alert("تم إنشاء الحساب بنجاح");
-        window.location.href = "payment.html";
-      } catch (error) {
-        if (error.code === "auth/email-already-in-use") {
-          alert("البريد الإلكتروني مستخدم مسبقًا");
-        } else if (error.code === "auth/invalid-email") {
-          alert("صيغة البريد الإلكتروني غير صحيحة");
-        } else {
-          alert("حدث خطأ: " + error.message);
+        if (!email || !password) {
+          alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+          return;
         }
-      }
-    }
 
-    async function signIn() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+          
+          // فحص حالة الدفع بعد تسجيل الدخول
+          const userRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userRef);
 
-      if (!email || !password) {
-        alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
-        return;
-      }
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const paymentDate = data.paymentDate?.toDate?.();
 
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+            if (!paymentDate) {
+              window.location.href = "payment.html";  // إذا لم يتم الدفع
+            } else {
+              const now = new Date();
+              const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
 
-        // 🔍 تحقق من تاريخ الدفع
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          const data = userDocSnap.data();
-          const paymentDate = data.paymentDate?.toDate(); // تحويل Timestamp إلى Date
-
-          const now = new Date();
-          const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-
-          if (!paymentDate || (now - paymentDate > thirtyDays)) {
-            // لم يدفع أو انتهت مدة الاشتراك
-            window.location.href = "payment.html";
+              if (diffDays > 30) {
+                alert("انتهى اشتراكك. يرجى التجديد.");
+                window.location.href = "payment.html";  // إذا انتهى الاشتراك
+              } else {
+                window.location.href = "home.html";  // إذا تم الدفع
+              }
+            }
           } else {
-            window.location.href = "home.html";
+            alert("لم يتم العثور على بيانات المستخدم.");
           }
-        } else {
-          alert("لم يتم العثور على بيانات المستخدم");
+        } catch (error) {
+          if (error.code === "auth/user-not-found") {
+            alert("الحساب غير موجود");
+          } else if (error.code === "auth/wrong-password") {
+            alert("كلمة المرور غير صحيحة");
+          } else {
+            alert("حدث خطأ: " + error.message);
+          }
         }
-
-      } catch (error) {
-        if (error.code === "auth/user-not-found") {
-          alert("الحساب غير موجود");
-        } else if (error.code === "auth/wrong-password") {
-          alert("كلمة المرور غير صحيحة");
-        } else {
-          alert("حدث خطأ: " + error.message);
-        }
-      }
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      toggleMode();
-      const logo = document.getElementById("logo");
-      setTimeout(() => {
-        logo.style.display = "none";
-        document.querySelector(".form-container").style.display = "block";
-      }, 2000);
-    });
+      });
+    };
   </script>
 
   <style>
@@ -164,15 +94,7 @@
       max-width: 420px;
       margin: auto;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-      display: none;
-      animation: fadeIn 1s ease;
-    }
-
-    .logo {
-      width: 120px;
-      margin: 0 auto 30px;
       display: block;
-      animation: blink 1.5s ease-in-out 2;
     }
 
     input {
@@ -220,33 +142,16 @@
       display: inline-block;
       font-weight: bold;
     }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes blink {
-      0% { opacity: 0; }
-      50% { opacity: 1; }
-      100% { opacity: 0; }
-    }
   </style>
 </head>
 <body>
 
-  <!-- شعار يختفي بعد التحميل -->
-  <img id="logo" src="logo.jpeg" class="logo" alt="شعار ضاحيتي" />
-
   <!-- نموذج تسجيل الدخول -->
   <div class="form-container">
-    <input type="text" id="fullName" placeholder="الاسم الكامل" />
-    <input type="text" id="phone" placeholder="رقم الهاتف (يبدأ بـ 05)" />
     <input type="email" id="email" placeholder="البريد الإلكتروني" />
     <input type="password" id="password" placeholder="كلمة المرور" />
-    <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" />
-    <button class="button" id="actionBtn" onclick="handleAction()">تسجيل حساب جديد</button>
-    <div class="toggle-link" id="toggleText" onclick="toggleMode()">لديك حساب؟ تسجيل الدخول</div>
+    <button class="button" id="login-btn">تسجيل الدخول</button>
+    <div class="toggle-link" id="toggleText" onclick="toggleMode()">ليس لديك حساب؟ إنشاء حساب</div>
   </div>
 
 </body>
