@@ -1,183 +1,102 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title></title>
+function listenToMessages() {
+  const messagesList = document.getElementById("messagesList");
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  db.collection("messages").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+    messagesList.innerHTML = "";
 
-  <style>
-    body {
-      font-family: 'Cairo', sans-serif;
-      background-color: #f0f0f0;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    textarea {
-      width: 100%;
-      height: 100px;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 10px;
-    }
-
-    button {
-      padding: 10px 20px;
-      background-color: #6200ea;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #3700b3;
-    }
-
-    .message {
-      text-align: right;
-      background: #f9f9f9;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border-right: 4px solid #6200ea;
-      position: relative;
-    }
-
-    .delete-btn {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      background-color: red;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      font-size: 12px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    small {
-      color: gray;
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <h2></h2>
-  <textarea id="messageInput" placeholder="  اكتب رسالتك هنا و سيراها الجميع(لاتزيد عن 160 حرف) ..."></textarea>
-  <button onclick="sendMessage()">إرسال</button>
-  <div id="messagesList" style="margin-top: 30px;"></div>
-</div>
-
-<script>
-  // Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-    authDomain: "my-gob.firebaseapp.com",
-    projectId: "my-gob",
-    storageBucket: "my-gob.appspot.com",
-    messagingSenderId: "464127979375",
-    appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-    measurementId: "G-W2XBV7XH66"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  let currentUser = null;
-  let isAdmin = false;
-
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      window.location.href = "index.html";
+    if (snapshot.empty) {
+      messagesList.innerHTML = "<p>لا توجد رسائل بعد.</p>";
       return;
     }
 
-    currentUser = user;
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const messageDiv = document.createElement("div");
+      messageDiv.className = "message";
 
-    // تحقق من إذا كان المستخدم مشرفًا
-    const userDoc = await db.collection("users").doc(user.uid).get();
-    const userData = userDoc.data();
-    isAdmin = userData?.role === "admin";
+      const date = data.timestamp?.toDate?.();
+      const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-    listenToMessages();
-  });
+      // عنصر لعرض النص
+      const messageText = document.createElement("span");
+      messageText.textContent = data.text;
 
-  async function sendMessage() {
-    const input = document.getElementById("messageInput");
-    const text = input.value.trim();
+      // حاوية الرسالة
+      messageDiv.innerHTML = `
+        <strong>${data.userName || "مستخدم مجهول"}</strong><br/>
+      `;
+      messageDiv.appendChild(messageText);
+      messageDiv.innerHTML += `<br/><small>${formattedDate}</small>`;
 
-    if (!text) {
-      alert("يرجى كتابة تعليق قبل الإرسال");
-      return;
-    }
-
-    await db.collection("messages").add({
-      text,
-      userEmail: currentUser.email,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    input.value = "";
-  }
-
-  function listenToMessages() {
-    const messagesList = document.getElementById("messagesList");
-
-    db.collection("messages").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-      messagesList.innerHTML = "";
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const messageDiv = document.createElement("div");
-        messageDiv.className = "message";
-
-        messageDiv.innerHTML = `
-          <strong>${data.userEmail}</strong><br/>
-          <span>${data.text}</span><br/>
-          <small>${data.timestamp?.toDate().toLocaleString("ar-EG") || ""}</small>
-        `;
-
-        // إذا كان المستخدم مشرفًا، أضف زر الحذف
-        if (isAdmin) {
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "delete-btn";
-          deleteBtn.textContent = "حذف";
-          deleteBtn.onclick = async () => {
-            const confirmDelete = confirm("هل أنت متأكد من حذف هذا التعليق؟");
-            if (confirmDelete) {
+      // زر الحذف للمشرفين
+      if (isAdmin) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.textContent = "حذف";
+        deleteBtn.onclick = async () => {
+          const confirmDelete = confirm("هل أنت متأكد من حذف هذا التعليق؟");
+          if (confirmDelete) {
+            try {
               await db.collection("messages").doc(doc.id).delete();
+              alert("تم حذف الرسالة بنجاح");
+            } catch (error) {
+              console.error("خطأ أثناء حذف الرسالة:", error);
+              alert("حدث خطأ أثناء حذف الرسالة");
+            }
+          }
+        };
+        messageDiv.appendChild(deleteBtn);
+      }
+
+      // زر التعديل إذا كان المستخدم هو صاحب الرسالة
+      if (data.userId === currentUser.uid) {
+        const editBtn = document.createElement("button");
+        editBtn.className = "delete-btn";
+        editBtn.style.left = "70px";
+        editBtn.textContent = "تعديل";
+
+        editBtn.onclick = () => {
+          // إنشاء حقل الإدخال وزر الحفظ
+          const input = document.createElement("textarea");
+          input.value = data.text;
+          input.style.width = "100%";
+          input.style.marginTop = "10px";
+
+          const saveBtn = document.createElement("button");
+          saveBtn.textContent = "حفظ";
+          saveBtn.style.marginTop = "10px";
+
+          // استبدال النص بالحقل وزر الحفظ
+          messageDiv.replaceChild(input, messageText);
+          messageDiv.appendChild(saveBtn);
+
+          saveBtn.onclick = async () => {
+            const newText = input.value.trim();
+            if (!newText) {
+              alert("النص لا يمكن أن يكون فارغًا");
+              return;
+            }
+            if (newText.length > 160) {
+              alert("يجب ألا تتجاوز الرسالة 160 حرفًا");
+              return;
+            }
+
+            try {
+              await db.collection("messages").doc(doc.id).update({
+                text: newText
+              });
+              alert("تم تعديل الرسالة بنجاح");
+            } catch (error) {
+              console.error("خطأ أثناء التعديل:", error);
+              alert("حدث خطأ أثناء تعديل الرسالة");
             }
           };
-          messageDiv.appendChild(deleteBtn);
-        }
+        };
 
-        messagesList.appendChild(messageDiv);
-      });
+        messageDiv.appendChild(editBtn);
+      }
+
+      messagesList.appendChild(messageDiv);
     });
-  }
-</script>
-
-</body>
-</html>
+  });
+}
