@@ -5,6 +5,140 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>تسجيل الدخول</title>
 
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    window.onload = () => {
+      const loginBtn = document.getElementById("login-btn");
+      const registerBtn = document.getElementById("register-btn");
+
+      setTimeout(() => {
+        document.getElementById("logo").style.display = "none";
+        document.getElementById("forms").style.display = "block";
+      }, 2500);
+
+      loginBtn.addEventListener("click", async () => {
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!email || !password) {
+          alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
+          return;
+        }
+
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          const userRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userRef);
+
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const paymentDate = data.paymentDate?.toDate?.();
+
+            if (!paymentDate) {
+              window.location.href = "payment.html";
+            } else {
+              const now = new Date();
+              const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
+              if (diffDays > 30) {
+                alert("انتهى اشتراكك. يرجى التجديد.");
+                window.location.href = "payment.html";
+              } else {
+                window.location.href = "home.html";
+              }
+            }
+          } else {
+            alert("لم يتم العثور على بيانات المستخدم.");
+          }
+        } catch (error) {
+          if (error.code === "auth/user-not-found") {
+            alert("الحساب غير موجود");
+          } else if (error.code === "auth/wrong-password") {
+            alert("كلمة المرور غير صحيحة");
+          } else {
+            alert("حدث خطأ: " + error.message);
+          }
+        }
+      });
+
+      registerBtn.addEventListener("click", async () => {
+        const email = document.getElementById("register-email").value.trim();
+        const password = document.getElementById("register-password").value;
+        const fullName = document.getElementById("register-name").value.trim();
+        const phone = document.getElementById("register-phone").value.trim();
+
+        if (!email || !password || !fullName || !phone) {
+          alert("يرجى تعبئة جميع الحقول");
+          return;
+        }
+
+        if (fullName.split(/\s+/).length > 4) {
+          alert("الاسم يجب ألا يتجاوز 4 كلمات");
+          return;
+        }
+
+        if (!/^05\d{8}$/.test(phone)) {
+          alert("رقم الجوال يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
+          return;
+        }
+
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          await setDoc(doc(db, "users", user.uid), {
+            name: fullName,
+            phone: phone,
+            createdAt: new Date()
+          });
+
+          alert("تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن.");
+          toggleForms();
+        } catch (error) {
+          if (error.code === "auth/email-already-in-use") {
+            alert("البريد الإلكتروني مستخدم بالفعل.");
+          } else if (error.code === "auth/weak-password") {
+            alert("كلمة المرور ضعيفة. يجب أن تكون 6 أحرف على الأقل.");
+          } else {
+            alert("حدث خطأ: " + error.message);
+          }
+        }
+      });
+    };
+
+    window.toggleForms = () => {
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+
+      if (loginForm.style.display === "none") {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+      } else {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+      }
+    };
+  </script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -13,44 +147,13 @@
       padding: 40px;
     }
 
-    /* شعار ترحيبي */
-    #logo-container {
-      opacity: 1;
-      animation: logoFade 3s ease forwards;
-    }
-
-    @keyframes logoFade {
-      0%, 100% { opacity: 0; }
-      10%, 90% { opacity: 1; }
-    }
-
-    #logo {
-      width: 200px;
-      margin: 0 auto 40px;
-      animation: pulse 3s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.2; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.05); }
-    }
-
     .form-container {
-      opacity: 0;
       background-color: #fff;
       border-radius: 20px;
       padding: 30px;
       max-width: 420px;
       margin: auto;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-      display: none;
-      animation: fadeIn 1s ease forwards;
-    }
-
-    @keyframes fadeIn {
-      to {
-        opacity: 1;
-      }
     }
 
     input {
@@ -98,99 +201,46 @@
       display: inline-block;
       font-weight: bold;
     }
+
+    .logo {
+      animation: blink 2s ease-in-out infinite alternate;
+      max-width: 180px;
+      margin: 30px auto;
+    }
+
+    @keyframes blink {
+      0% { opacity: 0; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
   </style>
 </head>
 <body>
 
-  <!-- شعار ترحيبي -->
-  <div id="logo-container">
-    <img src="/mnt/data/1652adc8-874d-495b-bf48-1ed67ab9f2d3.jpeg" alt="logo.jpeg" id="logo" />
+  <div id="logo">
+    <img src="1652adc8-874d-495b-bf48-1ed67ab9f2d3.jpeg" alt="شعار" class="logo" />
   </div>
 
-  <!-- نموذج تسجيل الدخول -->
-  <div class="form-container" id="login-form">
-    <input type="email" id="email" placeholder="البريد الإلكتروني" />
-    <input type="password" id="password" placeholder="كلمة المرور" />
-    <button class="button" id="login-btn">تسجيل الدخول</button>
-    <div class="toggle-link" onclick="alert('ميزة التسجيل لم تُفعّل بعد')">ليس لديك حساب؟ إنشاء حساب</div>
+  <div id="forms" style="display: none;">
+    <div class="form-container">
+      <!-- تسجيل الدخول -->
+      <div id="login-form">
+        <input type="email" id="email" placeholder="البريد الإلكتروني" />
+        <input type="password" id="password" placeholder="كلمة المرور" />
+        <button class="button" id="login-btn">تسجيل الدخول</button>
+        <div class="toggle-link" onclick="toggleForms()">ليس لديك حساب؟ إنشاء حساب</div>
+      </div>
+
+      <!-- إنشاء حساب -->
+      <div id="register-form" style="display: none;">
+        <input type="text" id="register-name" placeholder="الاسم الكامل (بحد أقصى ٤ كلمات)" />
+        <input type="tel" id="register-phone" placeholder="رقم الجوال (05xxxxxxxx)" />
+        <input type="email" id="register-email" placeholder="البريد الإلكتروني" />
+        <input type="password" id="register-password" placeholder="كلمة المرور" />
+        <button class="button" id="register-btn">إنشاء الحساب</button>
+        <div class="toggle-link" onclick="toggleForms()">لديك حساب؟ تسجيل الدخول</div>
+      </div>
+    </div>
   </div>
 
-  <!-- Firebase & JS -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    window.onload = () => {
-      // إخفاء الشعار بعد الانيميشن
-      setTimeout(() => {
-        document.getElementById("logo-container").style.display = "none";
-        const loginForm = document.getElementById("login-form");
-        loginForm.style.display = "block";
-      }, 3000); // 3 ثواني هي مدة الأنيميشن
-
-      const loginBtn = document.getElementById("login-btn");
-
-      loginBtn.addEventListener("click", async () => {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-
-        if (!email || !password) {
-          alert("يرجى إدخال البريد الإلكتروني وكلمة المرور");
-          return;
-        }
-
-        try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-
-          const userRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(userRef);
-
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            const paymentDate = data.paymentDate?.toDate?.();
-
-            if (!paymentDate) {
-              window.location.href = "payment.html";
-            } else {
-              const now = new Date();
-              const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
-              if (diffDays > 30) {
-                alert("انتهى اشتراكك. يرجى التجديد.");
-                window.location.href = "payment.html";
-              } else {
-                window.location.href = "home.html";
-              }
-            }
-          } else {
-            alert("لم يتم العثور على بيانات المستخدم.");
-          }
-        } catch (error) {
-          if (error.code === "auth/user-not-found") {
-            alert("الحساب غير موجود");
-          } else if (error.code === "auth/wrong-password") {
-            alert("كلمة المرور غير صحيحة");
-          } else {
-            alert("حدث خطأ: " + error.message);
-          }
-        }
-      });
-    };
-  </script>
 </body>
 </html>
