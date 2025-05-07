@@ -5,186 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>أخبار الضاحية</title>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, deleteDoc, updateDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-
-    let userNameSpan;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const paymentDate = data.paymentDate?.toDate?.();
-
-        if (!paymentDate) {
-          window.location.href = "payment.html";
-          return;
-        }
-
-        const now = new Date();
-        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
-
-        if (diffDays > 30) {
-          alert("انتهى اشتراكك. يرجى التجديد.");
-          window.location.href = "payment.html";
-          return;
-        }
-
-        userNameSpan.textContent = data.name || "مستخدم";
-      } else {
-        alert("لم يتم العثور على بيانات المستخدم.");
-        window.location.href = "payment.html";
-      }
-    });
-
-    window.onload = () => {
-      userNameSpan = document.getElementById("user-name");
-
-      document.getElementById("logout-btn").addEventListener("click", async () => {
-        try {
-          await signOut(auth);
-          window.location.href = "index.html";
-        } catch (error) {
-          alert("خطأ أثناء تسجيل الخروج: " + error.message);
-        }
-      });
-
-      // Load comments when page loads
-      loadComments();
-    };
-
-    // إرسال التعليق مع صورة
-    async function sendComment() {
-      const commentText = document.getElementById("commentText").value;
-      const file = document.getElementById("imageInput").files[0];
-
-      if (!commentText.trim()) {
-        alert("يرجى كتابة تعليق");
-        return;
-      }
-
-      // رفع الصورة إلى Firebase Storage إذا كانت موجودة
-      let imageUrl = "";
-      if (file) {
-        const storageRef = ref(storage, `comments_images/${file.name}`);
-        await uploadBytes(storageRef, file);
-        imageUrl = await getDownloadURL(storageRef);
-      }
-
-      // حفظ التعليق في Firestore
-      await addDoc(collection(db, "news-comments"), {
-        text: commentText,
-        userName: userNameSpan.textContent,
-        userEmail: auth.currentUser.email,
-        timestamp: serverTimestamp(),
-        imageUrl: imageUrl  // إضافة رابط الصورة إن كانت موجودة
-      });
-
-      alert("تم إرسال التعليق بنجاح!");
-      document.getElementById("commentText").value = "";
-      document.getElementById("imageInput").value = "";
-
-      loadComments();  // إعادة تحميل التعليقات بعد إرسال تعليق جديد
-    }
-
-    // عرض التعليقات من Firestore
-    async function loadComments() {
-      const commentsContainer = document.getElementById("comments-container");
-      commentsContainer.innerHTML = ""; // مسح التعليقات السابقة
-
-      const querySnapshot = await getDocs(collection(db, "news-comments"));
-      querySnapshot.forEach((doc) => {
-        const commentData = doc.data();
-        const commentId = doc.id;
-        const commentElement = document.createElement("div");
-        commentElement.classList.add("comment");
-
-        commentElement.innerHTML = `
-          <div class="comment-header">
-            <span>${commentData.userName} (${commentData.userEmail})</span>
-            <div class="comment-actions">
-              <button onclick="editComment('${commentId}', '${commentData.text}', '${commentData.imageUrl}')">تعديل</button>
-              <button onclick="deleteComment('${commentId}')">حذف</button>
-            </div>
-          </div>
-          <p>${commentData.text}</p>
-          ${commentData.imageUrl ? `<img src="${commentData.imageUrl}" alt="صورة التعليق" class="comment-image" />` : ""}
-        `;
-
-        commentsContainer.appendChild(commentElement);
-      });
-    }
-
-    // حذف التعليق
-    async function deleteComment(commentId) {
-      try {
-        await deleteDoc(doc(db, "news-comments", commentId));
-        alert("تم حذف التعليق بنجاح!");
-        loadComments();  // إعادة تحميل التعليقات بعد الحذف
-      } catch (error) {
-        alert("حدث خطأ أثناء حذف التعليق: " + error.message);
-      }
-    }
-
-    // تعديل التعليق
-    async function editComment(commentId, oldText, oldImageUrl) {
-      const newText = prompt("تعديل التعليق:", oldText);
-      const newImageFile = prompt("اختر صورة جديدة (رابط الصورة فقط):", oldImageUrl);
-
-      if (newText !== null) {
-        try {
-          const commentRef = doc(db, "news-comments", commentId);
-          let imageUrl = newImageFile || oldImageUrl;
-
-          if (newImageFile && newImageFile !== oldImageUrl) {
-            // رفع الصورة الجديدة إلى Firebase Storage
-            const storageRef = ref(storage, `comments_images/${newImageFile}`);
-            await uploadBytes(storageRef, newImageFile);
-            imageUrl = await getDownloadURL(storageRef);
-          }
-
-          // تحديث التعليق في Firestore
-          await updateDoc(commentRef, {
-            text: newText,
-            imageUrl: imageUrl
-          });
-
-          alert("تم تعديل التعليق بنجاح!");
-          loadComments();  // إعادة تحميل التعليقات بعد التعديل
-        } catch (error) {
-          alert("حدث خطأ أثناء تعديل التعليق: " + error.message);
-        }
-      }
-    }
-
-  </script>
-
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -194,7 +14,6 @@
       direction: rtl;
       text-align: center;
     }
-
     header {
       background-color: #6200ea;
       color: white;
@@ -204,48 +23,172 @@
       align-items: center;
       border-radius: 8px;
       margin-bottom: 30px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-
     .logout-btn {
       background-color: #e53935;
       color: white;
       border: none;
       padding: 10px 20px;
-      font-size: 16px;
       border-radius: 10px;
       cursor: pointer;
-      transition: background-color 0.3s;
     }
-
-    .logout-btn:hover {
-      background-color: #c62828;
-    }
-
-    .form-container {
-      margin-top: 30px;
+    .form-container, .comments-section {
       max-width: 600px;
-      margin: 0 auto;
+      margin: 20px auto;
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
-
     textarea {
-      width: 100%;
-      height: 100px;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      width: 100%; height: 100px;
+      padding: 10px; font-size: 16px;
+      border-radius: 8px; border: 1px solid #ccc;
       margin-bottom: 10px;
     }
+    input[type="file"] { margin-top: 10px; }
+    button { padding: 10px 20px; margin-top: 10px;
+      background-color: #6200ea;
+      color: white; border: none;
+      border-radius: 8px; cursor: pointer; }
+    .comment {
+      border-bottom: 1px solid #ccc;
+      text-align: right;
+      padding: 10px;
+    }
+    .comment img { max-width: 100%; margin-top: 10px; border-radius: 8px; }
+    .comment-buttons { margin-top: 5px; }
+    .comment-buttons button { margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>مرحبًا، <span id="user-name">...</span></span>
+    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+  </header>
 
-    input[type="file"] {
-      margin-top: 10px;
+  <div class="form-container">
+    <h2>أخبار الضاحية</h2>
+    <textarea id="commentText" placeholder="اكتب تعليقك هنا..."></textarea>
+    <input type="file" id="imageInput" accept="image/*" />
+    <button onclick="sendComment()">إرسال التعليق</button>
+  </div>
+
+  <div class="comments-section" id="comments"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, serverTimestamp, doc, updateDoc, deleteDoc, getDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+
+    const app = initializeApp({
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+    });
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    let userNameSpan, currentUser;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return location.href = "index.html";
+      currentUser = user;
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+      if (!docSnap.exists()) return alert("لم يتم العثور على بيانات المستخدم.");
+
+      const userData = docSnap.data();
+      userNameSpan = document.getElementById("user-name");
+      userNameSpan.textContent = userData.name || "مستخدم";
+      loadComments();
+    });
+
+    document.getElementById("logout-btn").onclick = async () => {
+      await signOut(auth);
+      location.href = "index.html";
+    };
+
+    async function sendComment() {
+      const text = document.getElementById("commentText").value;
+      const file = document.getElementById("imageInput").files[0];
+      if (!text.trim()) return alert("يرجى كتابة تعليق");
+
+      let imageUrl = "";
+      if (file) {
+        const imageRef = ref(storage, `news_images/${Date.now()}_${file.name}`);
+        await uploadBytes(imageRef, file);
+        imageUrl = await getDownloadURL(imageRef);
+      }
+
+      await addDoc(collection(db, "news-comments"), {
+        text, imageUrl,
+        userName: userNameSpan.textContent,
+        userId: currentUser.uid,
+        timestamp: serverTimestamp()
+      });
+
+      document.getElementById("commentText").value = "";
+      document.getElementById("imageInput").value = "";
+      loadComments();
     }
 
-    button {
-      padding: 10px 20px;
-      background-color: #620
+    async function loadComments() {
+      const commentsDiv = document.getElementById("comments");
+      commentsDiv.innerHTML = "";
+      const q = query(collection(db, "news-comments"), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "comment";
+
+        div.innerHTML = `
+          <strong>${data.userName}</strong><br>
+          <p>${data.text}</p>
+          ${data.imageUrl ? `<img src="${data.imageUrl}" alt="صورة التعليق" />` : ""}
+        `;
+
+        if (data.userId === currentUser.uid) {
+          const btns = document.createElement("div");
+          btns.className = "comment-buttons";
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "تعديل";
+          editBtn.onclick = () => editComment(docSnap.id, data.text);
+          btns.appendChild(editBtn);
+          div.appendChild(btns);
+        }
+
+        // للمشرف: حذف التعليق
+        if (currentUser.email === "admin@example.com") {
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "حذف";
+          deleteBtn.onclick = async () => {
+            if (confirm("هل أنت متأكد من حذف التعليق؟")) {
+              await deleteDoc(doc(db, "news-comments", docSnap.id));
+              loadComments();
+            }
+          };
+          div.appendChild(deleteBtn);
+        }
+
+        commentsDiv.appendChild(div);
+      });
+    }
+
+    function editComment(id, oldText) {
+      const newText = prompt("تعديل التعليق:", oldText);
+      if (newText && newText.trim()) {
+        updateDoc(doc(db, "news-comments", id), { text: newText });
+        loadComments();
+      }
+    }
+  </script>
+</body>
+</html>
