@@ -88,7 +88,6 @@
         return;
       }
 
-      // رفع الصورة إلى Firebase Storage إذا كانت موجودة
       let imageUrl = "";
       if (file) {
         const storageRef = ref(storage, `comments_images/${file.name}`);
@@ -96,21 +95,25 @@
         imageUrl = await getDownloadURL(storageRef);
       }
 
-      // حفظ التعليق في Firestore
-      await addDoc(collection(db, "news-comments"), {
-        text: commentText,
-        userName: userNameSpan.textContent,
-        userEmail: auth.currentUser.email,
-        timestamp: serverTimestamp(),
-        imageUrl: imageUrl  // إضافة رابط الصورة إن كانت موجودة
-      });
+      try {
+        // حفظ التعليق في Firestore
+        await addDoc(collection(db, "news-comments"), {
+          text: commentText,
+          userName: userNameSpan.textContent,
+          userEmail: auth.currentUser.email,
+          timestamp: serverTimestamp(),
+          imageUrl: imageUrl
+        });
 
-      alert("تم إرسال التعليق بنجاح!");
-      document.getElementById("commentText").value = "";
-      document.getElementById("imageInput").value = "";
+        alert("تم إرسال التعليق بنجاح!");
+        document.getElementById("commentText").value = "";
+        document.getElementById("imageInput").value = "";
 
-      // عرض التعليقات بعد الإرسال
-      displayComments();
+        // عرض التعليقات بعد الإرسال
+        displayComments();
+      } catch (error) {
+        console.error("حدث خطأ أثناء إرسال التعليق:", error);
+      }
     }
 
     // عرض التعليقات من Firestore
