@@ -8,7 +8,7 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -26,10 +26,9 @@
     const db = getFirestore(app);
 
     window.onload = () => {
-      const loginForm = document.getElementById("login-form");
-      loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+      const loginBtn = document.getElementById("login-btn");
 
+      loginBtn.addEventListener("click", async () => {
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
@@ -42,25 +41,27 @@
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
 
-          // فحص حالة الدفع بعد تسجيل الدخول
+          // جلب بيانات المستخدم من Firestore
           const userRef = doc(db, "users", user.uid);
           const docSnap = await getDoc(userRef);
 
           if (docSnap.exists()) {
             const data = docSnap.data();
-            const paymentDate = data.paymentDate?.toDate?.(); // تأكد من تحويل التاريخ بشكل صحيح
+            const paymentDate = data.paymentDate?.toDate?.();
 
             if (!paymentDate) {
-              window.location.href = "payment.html";  // إذا لم يتم الدفع
+              // لم يتم الدفع بعد
+              window.location.href = "payment.html";
             } else {
               const now = new Date();
               const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
 
               if (diffDays > 30) {
                 alert("انتهى اشتراكك. يرجى التجديد.");
-                window.location.href = "payment.html";  // إذا انتهى الاشتراك
+                window.location.href = "payment.html";
               } else {
-                window.location.href = "home.html";  // إذا تم الدفع
+                // اشتراك ساري
+                window.location.href = "home.html";
               }
             }
           } else {
@@ -146,12 +147,11 @@
 </head>
 <body>
 
-  <!-- نموذج تسجيل الدخول -->
   <div class="form-container">
     <input type="email" id="email" placeholder="البريد الإلكتروني" />
     <input type="password" id="password" placeholder="كلمة المرور" />
     <button class="button" id="login-btn">تسجيل الدخول</button>
-    <div class="toggle-link" id="toggleText" onclick="toggleMode()">ليس لديك حساب؟ إنشاء حساب</div>
+    <div class="toggle-link" onclick="alert('ميزة التسجيل لم تُفعّل بعد')">ليس لديك حساب؟ إنشاء حساب</div>
   </div>
 
 </body>
