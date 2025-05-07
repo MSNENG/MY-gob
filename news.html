@@ -8,8 +8,8 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, getAuth, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, deleteDoc, updateDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
     import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
     const firebaseConfig = {
@@ -74,6 +74,9 @@
           alert("خطأ أثناء تسجيل الخروج: " + error.message);
         }
       });
+
+      // Load comments when page loads
+      loadComments();
     };
 
     // إرسال التعليق مع صورة
@@ -106,7 +109,80 @@
       alert("تم إرسال التعليق بنجاح!");
       document.getElementById("commentText").value = "";
       document.getElementById("imageInput").value = "";
+
+      loadComments();  // إعادة تحميل التعليقات بعد إرسال تعليق جديد
     }
+
+    // عرض التعليقات من Firestore
+    async function loadComments() {
+      const commentsContainer = document.getElementById("comments-container");
+      commentsContainer.innerHTML = ""; // مسح التعليقات السابقة
+
+      const querySnapshot = await getDocs(collection(db, "news-comments"));
+      querySnapshot.forEach((doc) => {
+        const commentData = doc.data();
+        const commentId = doc.id;
+        const commentElement = document.createElement("div");
+        commentElement.classList.add("comment");
+
+        commentElement.innerHTML = `
+          <div class="comment-header">
+            <span>${commentData.userName} (${commentData.userEmail})</span>
+            <div class="comment-actions">
+              <button onclick="editComment('${commentId}', '${commentData.text}', '${commentData.imageUrl}')">تعديل</button>
+              <button onclick="deleteComment('${commentId}')">حذف</button>
+            </div>
+          </div>
+          <p>${commentData.text}</p>
+          ${commentData.imageUrl ? `<img src="${commentData.imageUrl}" alt="صورة التعليق" class="comment-image" />` : ""}
+        `;
+
+        commentsContainer.appendChild(commentElement);
+      });
+    }
+
+    // حذف التعليق
+    async function deleteComment(commentId) {
+      try {
+        await deleteDoc(doc(db, "news-comments", commentId));
+        alert("تم حذف التعليق بنجاح!");
+        loadComments();  // إعادة تحميل التعليقات بعد الحذف
+      } catch (error) {
+        alert("حدث خطأ أثناء حذف التعليق: " + error.message);
+      }
+    }
+
+    // تعديل التعليق
+    async function editComment(commentId, oldText, oldImageUrl) {
+      const newText = prompt("تعديل التعليق:", oldText);
+      const newImageFile = prompt("اختر صورة جديدة (رابط الصورة فقط):", oldImageUrl);
+
+      if (newText !== null) {
+        try {
+          const commentRef = doc(db, "news-comments", commentId);
+          let imageUrl = newImageFile || oldImageUrl;
+
+          if (newImageFile && newImageFile !== oldImageUrl) {
+            // رفع الصورة الجديدة إلى Firebase Storage
+            const storageRef = ref(storage, `comments_images/${newImageFile}`);
+            await uploadBytes(storageRef, newImageFile);
+            imageUrl = await getDownloadURL(storageRef);
+          }
+
+          // تحديث التعليق في Firestore
+          await updateDoc(commentRef, {
+            text: newText,
+            imageUrl: imageUrl
+          });
+
+          alert("تم تعديل التعليق بنجاح!");
+          loadComments();  // إعادة تحميل التعليقات بعد التعديل
+        } catch (error) {
+          alert("حدث خطأ أثناء تعديل التعليق: " + error.message);
+        }
+      }
+    }
+
   </script>
 
   <style>
@@ -172,32 +248,4 @@
 
     button {
       padding: 10px 20px;
-      background-color: #6200ea;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #3700b3;
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <span>مرحبًا، <span id="user-name">...</span></span>
-    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
-  </header>
-
-  <div class="form-container">
-    <h2>أخبار الضاحية</h2>
-    <textarea id="commentText" placeholder="اكتب تعليقك هنا..."></textarea>
-    <input type="file" id="imageInput" accept="image/*" />
-    <button onclick="sendComment()">إرسال التعليق</button>
-  </div>
-
-</body>
-</html>
+      background-color: #620
