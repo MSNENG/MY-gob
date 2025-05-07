@@ -17,25 +17,32 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  let currentUser;
+  let currentUser = null;
   let isAdmin = false;
 
-  onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(auth, (user) => {
     if (user) {
       currentUser = user;
-
-      // 🔽 تحقق مما إذا كان المستخدم مشرفًا
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        isAdmin = data.role === "admin";
-      }
-
-      listenToMessages();
+      checkIfAdmin(user.uid).then(() => {
+        listenToMessages();
+      });
     } else {
       window.location.href = "index.html";
     }
   });
+
+  // ✅ دالة async منفصلة لتحقق من كون المستخدم مشرف
+  async function checkIfAdmin(uid) {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        isAdmin = data.role === "admin";
+      }
+    } catch (error) {
+      console.error("فشل التحقق من الصلاحيات:", error);
+    }
+  }
 
   async function sendMessage() {
     const input = document.getElementById("messageInput");
@@ -77,13 +84,11 @@
           <small>${msg.timestamp?.toDate().toLocaleString("ar-EG") || ""}</small>
           ${isAdmin ? `<br/><button onclick="deleteMessage('${id}')">🗑 حذف</button>` : ""}
         `;
-
         messagesList.appendChild(item);
       });
     });
   }
 
-  // 🔽 دالة حذف التعليق
   window.deleteMessage = async function (id) {
     if (confirm("هل أنت متأكد أنك تريد حذف هذا التعليق؟")) {
       try {
