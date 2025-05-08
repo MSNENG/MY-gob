@@ -149,9 +149,19 @@
 
     // إذا كان هناك ملف صورة، ارفعها إلى Firebase Storage
     if (file) {
-      const storageRef = storage.ref().child("comment_images/" + Date.now() + "_" + file.name);
-      await storageRef.put(file);  // رفع الصورة إلى Firebase Storage
-      imageUrl = await storageRef.getDownloadURL();  // الحصول على رابط الصورة
+      try {
+        const storageRef = storage.ref().child("comment_images/" + Date.now() + "_" + file.name);
+        const uploadTask = await storageRef.put(file);  // رفع الصورة إلى Firebase Storage
+        console.log("صورة تم رفعها بنجاح");
+        
+        // انتظار إتمام عملية الرفع ثم الحصول على الرابط
+        imageUrl = await uploadTask.ref.getDownloadURL();  // الحصول على رابط الصورة
+        console.log("رابط الصورة: ", imageUrl);
+      } catch (error) {
+        console.error("حدث خطأ أثناء رفع الصورة: ", error);
+        alert("حدث خطأ أثناء رفع الصورة. الرجاء المحاولة لاحقًا.");
+        return;
+      }
     }
 
     // تخزين التعليق في Firestore مع رابط الصورة
