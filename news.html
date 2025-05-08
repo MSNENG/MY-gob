@@ -47,6 +47,10 @@
       cursor: pointer;
     }
 
+    button:hover {
+      background-color: #3700b3;
+    }
+
     .message {
       text-align: right;
       background: #f9f9f9;
@@ -57,25 +61,17 @@
       position: relative;
     }
 
-    .delete-btn, .edit-btn {
+    .delete-btn {
       position: absolute;
       top: 5px;
+      left: 5px;
+      background-color: red;
+      color: white;
+      border: none;
       padding: 5px 10px;
       font-size: 12px;
       border-radius: 4px;
       cursor: pointer;
-      border: none;
-      color: white;
-    }
-
-    .delete-btn {
-      left: 5px;
-      background-color: red;
-    }
-
-    .edit-btn {
-      left: 70px;
-      background-color: #ff9800;
     }
   </style>
 </head>
@@ -95,7 +91,8 @@
     projectId: "my-gob",
     storageBucket: "my-gob.appspot.com",
     messagingSenderId: "464127979375",
-    appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+    appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+    measurementId: "G-W2XBV7XH66"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -115,6 +112,7 @@
     const userDoc = await db.collection("users").doc(user.uid).get();
     const userData = userDoc.data();
     isAdmin = userData?.role === "admin";
+
     listenToMessages();
   });
 
@@ -122,45 +120,41 @@
     const input = document.getElementById("messageInput");
     const text = input.value.trim();
 
-    if (!currentUser) {
-      alert("يجب تسجيل الدخول أولاً.");
-      return;
-    }
-
     if (!text) {
-      alert("يرجى كتابة رسالة قبل الإرسال.");
+      alert("يرجى كتابة تعليق قبل الإرسال");
       return;
     }
-
     if (text.length > 160) {
       alert("الحد الأقصى 160 حرفًا.");
       return;
     }
 
-    try {
-      const userDoc = await db.collection("users").doc(currentUser.uid).get();
-      const userData = userDoc.data();
-      const userName = userData?.name || "مستخدم";
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+    const userData = userDoc.data();
+    const userName = userData?.name || "مستخدم";
 
-      await db.collection("messages").add({
-        text,
-        userId: currentUser.uid,
-        userName,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
+    // هنا تم تعديل مكان التخزين إلى "news-comment"
+    await db.collection("news-comment").add({
+      text,
+      userId: currentUser.uid,
+      userName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-      input.value = "";
-    } catch (error) {
-      console.error("خطأ أثناء إرسال الرسالة:", error);
-      alert("حدث خطأ أثناء الإرسال.");
-    }
+    input.value = "";
   }
 
   function listenToMessages() {
     const messagesList = document.getElementById("messagesList");
 
-    db.collection("messages").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+    // هنا تم تعديل المكان إلى "news-comment"
+    db.collection("news-comment").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
       messagesList.innerHTML = "";
+
+      if (snapshot.empty) {
+        messagesList.innerHTML = "<p>لا توجد رسائل.</p>";
+        return;
+      }
 
       snapshot.forEach((doc) => {
         const data = doc.data();
@@ -170,51 +164,31 @@
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-        // عرض الاسم والتعليق
-        const nameElem = document.createElement("strong");
-        nameElem.textContent = data.userName || "مستخدم مجهول";
-        const textElem = document.createElement("p");
-        textElem.textContent = data.text || "";
-        const timeElem = document.createElement("small");
-        timeElem.textContent = formattedDate;
+        const messageText = document.createElement("span");
+        messageText.textContent = data.text;
 
-        messageDiv.appendChild(nameElem);
-        messageDiv.appendChild(document.createElement("br"));
-        messageDiv.appendChild(textElem);
-        messageDiv.appendChild(document.createElement("br"));
-        messageDiv.appendChild(timeElem);
+        messageDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>`;
+        messageDiv.appendChild(messageText);
+        messageDiv.innerHTML += `<br/><small>${formattedDate}</small>`;
 
-        // زر الحذف (للأدمن)
         if (isAdmin) {
           const deleteBtn = document.createElement("button");
           deleteBtn.className = "delete-btn";
           deleteBtn.textContent = "حذف";
           deleteBtn.onclick = async () => {
             if (confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-              await db.collection("messages").doc(doc.id).delete();
+              await db.collection("news-comment").doc(doc.id).delete();
             }
           };
           messageDiv.appendChild(deleteBtn);
         }
 
-        // زر الحذف للمستخدم الذي أضاف التعليق
-        if (data.userId === currentUser.uid) {
-          const deleteOwnBtn = document.createElement("button");
-          deleteOwnBtn.className = "delete-btn";
-          deleteOwnBtn.textContent = "حذف تعليقي";
-          deleteOwnBtn.onclick = async () => {
-            if (confirm("هل أنت متأكد من حذف تعليقاك؟")) {
-              await db.collection("messages").doc(doc.id).delete();
-            }
-          };
-          messageDiv.appendChild(deleteOwnBtn);
-        }
-
-        // زر التعديل (لصاحب التعليق)
         if (data.userId === currentUser.uid) {
           const editBtn = document.createElement("button");
-          editBtn.className = "edit-btn";
+          editBtn.className = "delete-btn";
+          editBtn.style.left = "70px";
           editBtn.textContent = "تعديل";
+
           editBtn.onclick = () => {
             const input = document.createElement("textarea");
             input.value = data.text;
@@ -225,9 +199,7 @@
             saveBtn.textContent = "حفظ";
             saveBtn.style.marginTop = "10px";
 
-            messageDiv.innerHTML = "";
-            messageDiv.appendChild(input);
-            messageDiv.appendChild(document.createElement("br"));
+            messageDiv.replaceChild(input, messageText);
             messageDiv.appendChild(saveBtn);
 
             saveBtn.onclick = async () => {
@@ -237,13 +209,14 @@
                 return;
               }
               if (newText.length > 160) {
-                alert("الحد الأقصى 160 حرفًا.");
+                alert("أقصى عدد للحروف هو 160.");
                 return;
               }
 
-              await db.collection("messages").doc(doc.id).update({ text: newText });
+              await db.collection("news-comment").doc(doc.id).update({ text: newText });
             };
           };
+
           messageDiv.appendChild(editBtn);
         }
 
