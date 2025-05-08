@@ -163,7 +163,7 @@
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-        commentDiv.innerHTML = <strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>;
+        commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>`;
 
         if (data.imageUrl) {
           const img = document.createElement("img");
@@ -220,3 +220,4 @@
 </script>
 
 </body>
+</html>
