@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>رسائل 1عامة</title>
+  <title>رسائل عامة</title>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -73,12 +73,26 @@
       border-radius: 4px;
       cursor: pointer;
     }
+
+    .edit-section {
+      margin-top: 10px;
+      display: none;
+    }
+
+    .edit-section textarea {
+      margin-top: 5px;
+      width: 100%;
+    }
+
+    .edit-section button {
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>لوحة الرسائل</h2>
+  <h2>لوحة 1الرسائل</h2>
   <textarea id="messageInput" placeholder="اكتب رسالتك هنا (لا تتجاوز 160 حرف)..."></textarea>
   <button onclick="sendMessage()">إرسال</button>
   <div id="messagesList" style="margin-top: 30px;"></div>
@@ -189,7 +203,11 @@
           editBtn.style.left = "70px";
           editBtn.textContent = "تعديل";
 
+          // عرض مربع النص أسفل التعليق لتعديل النص
           editBtn.onclick = () => {
+            const editSection = document.createElement("div");
+            editSection.className = "edit-section";
+            
             const input = document.createElement("textarea");
             input.value = data.text;
             input.style.width = "100%";
@@ -199,9 +217,17 @@
             saveBtn.textContent = "حفظ";
             saveBtn.style.marginTop = "10px";
 
-            messageDiv.replaceChild(input, messageText);
-            messageDiv.appendChild(saveBtn);
+            const cancelBtn = document.createElement("button");
+            cancelBtn.textContent = "إلغاء";
+            cancelBtn.style.marginTop = "10px";
+            cancelBtn.style.marginLeft = "10px";
 
+            // إخفاء مربعات التحرير عند الضغط على "إلغاء"
+            cancelBtn.onclick = () => {
+              editSection.style.display = "none";
+            };
+
+            // تحديث التعليق في قاعدة البيانات عند الضغط على "حفظ"
             saveBtn.onclick = async () => {
               const newText = input.value.trim();
               if (!newText) {
@@ -214,7 +240,14 @@
               }
 
               await db.collection("messages").doc(doc.id).update({ text: newText });
+              editSection.style.display = "none"; // إخفاء مربع التعديل بعد الحفظ
             };
+
+            editSection.appendChild(input);
+            editSection.appendChild(saveBtn);
+            editSection.appendChild(cancelBtn);
+            messageDiv.appendChild(editSection);
+            editSection.style.display = "block"; // إظهار مربع التعديل
           };
 
           messageDiv.appendChild(editBtn);
