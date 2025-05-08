@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>أخبار الضاحية</title>
+  <title>رسائل عامة</title>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
   <style>
     body {
@@ -18,6 +17,7 @@
       padding: 20px;
       text-align: center;
     }
+
     .container {
       max-width: 600px;
       margin: auto;
@@ -26,6 +26,7 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
     textarea {
       width: 100%;
       height: 100px;
@@ -35,9 +36,7 @@
       border: 1px solid #ccc;
       margin-bottom: 10px;
     }
-    input[type="file"] {
-      margin-bottom: 10px;
-    }
+
     button {
       padding: 10px 20px;
       background-color: #6200ea;
@@ -47,6 +46,7 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
     .message {
       text-align: right;
       background: #f9f9f9;
@@ -56,33 +56,36 @@
       border-right: 4px solid #6200ea;
       position: relative;
     }
-    .delete-btn {
+
+    .delete-btn, .edit-btn {
       position: absolute;
       top: 5px;
-      left: 5px;
-      background-color: red;
-      color: white;
-      border: none;
       padding: 5px 10px;
       font-size: 12px;
       border-radius: 4px;
       cursor: pointer;
+      border: none;
+      color: white;
     }
-    .message img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 8px;
+
+    .delete-btn {
+      left: 5px;
+      background-color: red;
+    }
+
+    .edit-btn {
+      left: 70px;
+      background-color: #ff9800;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>أخبار الضاحية</h2>
-  <textarea id="commentInput" placeholder="اكتب تعليقك هنا..."></textarea>
-  <input type="file" id="imageInput" accept="image/*" />
-  <button onclick="sendComment()">إرسال</button>
-  <div id="commentsList" style="margin-top: 30px;"></div>
+  <h2>لوحة الرسائل</h2>
+  <textarea id="messageInput" placeholder="اكتب رسالتك هنا (لا تتجاوز 160 حرف)..."></textarea>
+  <button onclick="sendMessage()">إرسال</button>
+  <div id="messagesList" style="margin-top: 30px;"></div>
 </div>
 
 <script>
@@ -98,7 +101,6 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-  const storage = firebase.storage();
 
   let currentUser = null;
   let isAdmin = false;
@@ -113,84 +115,109 @@
     const userDoc = await db.collection("users").doc(user.uid).get();
     const userData = userDoc.data();
     isAdmin = userData?.role === "admin";
-    listenToComments();
+    listenToMessages();
   });
 
-  async function sendComment() {
-    const input = document.getElementById("commentInput");
+  async function sendMessage() {
+    const input = document.getElementById("messageInput");
     const text = input.value.trim();
-    const file = document.getElementById("imageInput").files[0];
 
-    if (!text && !file) {
-      alert("يرجى كتابة تعليق أو إرفاق صورة على الأقل");
+    if (!currentUser) {
+      alert("يجب تسجيل الدخول أولاً.");
       return;
     }
 
-    const userDoc = await db.collection("users").doc(currentUser.uid).get();
-    const userData = userDoc.data();
-    const userName = userData?.name || "مستخدم";
-
-    let imageUrl = "";
-    if (file) {
-      const storageRef = storage.ref().child("comment_images/" + Date.now() + "_" + file.name);
-      await storageRef.put(file);
-      imageUrl = await storageRef.getDownloadURL();
+    if (!text) {
+      alert("يرجى كتابة رسالة قبل الإرسال.");
+      return;
     }
 
-    await db.collection("news-comment").add({
-      text,
-      imageUrl,
-      userId: currentUser.uid,
-      userName,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    if (text.length > 160) {
+      alert("الحد الأقصى 160 حرفًا.");
+      return;
+    }
 
-    input.value = "";
-    document.getElementById("imageInput").value = "";
+    try {
+      const userDoc = await db.collection("users").doc(currentUser.uid).get();
+      const userData = userDoc.data();
+      const userName = userData?.name || "مستخدم";
+
+      await db.collection("messages").add({
+        text,
+        userId: currentUser.uid,
+        userName,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      input.value = "";
+    } catch (error) {
+      console.error("خطأ أثناء إرسال الرسالة:", error);
+      alert("حدث خطأ أثناء الإرسال.");
+    }
   }
 
-  function listenToComments() {
-    const commentsList = document.getElementById("commentsList");
+  function listenToMessages() {
+    const messagesList = document.getElementById("messagesList");
 
-    db.collection("news-comment").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
-      commentsList.innerHTML = "";
+    db.collection("messages").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+      messagesList.innerHTML = "";
 
       snapshot.forEach((doc) => {
         const data = doc.data();
-        const commentDiv = document.createElement("div");
-        commentDiv.className = "message";
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
 
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-        commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>`;
+        // عرض الاسم والتعليق
+        const nameElem = document.createElement("strong");
+        nameElem.textContent = data.userName || "مستخدم مجهول";
+        const textElem = document.createElement("p");
+        textElem.textContent = data.text || "";
+        const timeElem = document.createElement("small");
+        timeElem.textContent = formattedDate;
 
-        if (data.imageUrl) {
-          const img = document.createElement("img");
-          img.src = data.imageUrl;
-          commentDiv.appendChild(img);
-        }
+        messageDiv.appendChild(nameElem);
+        messageDiv.appendChild(document.createElement("br"));
+        messageDiv.appendChild(textElem);
+        messageDiv.appendChild(document.createElement("br"));
+        messageDiv.appendChild(timeElem);
 
+        // زر الحذف (للأدمن)
         if (isAdmin) {
           const deleteBtn = document.createElement("button");
           deleteBtn.className = "delete-btn";
           deleteBtn.textContent = "حذف";
           deleteBtn.onclick = async () => {
             if (confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-              await db.collection("news-comment").doc(doc.id).delete();
+              await db.collection("messages").doc(doc.id).delete();
             }
           };
-          commentDiv.appendChild(deleteBtn);
+          messageDiv.appendChild(deleteBtn);
         }
 
+        // زر الحذف للمستخدم الذي أضاف التعليق
+        if (data.userId === currentUser.uid) {
+          const deleteOwnBtn = document.createElement("button");
+          deleteOwnBtn.className = "delete-btn";
+          deleteOwnBtn.textContent = "حذف تعليقي";
+          deleteOwnBtn.onclick = async () => {
+            if (confirm("هل أنت متأكد من حذف تعليقاك؟")) {
+              await db.collection("messages").doc(doc.id).delete();
+            }
+          };
+          messageDiv.appendChild(deleteOwnBtn);
+        }
+
+        // زر التعديل (لصاحب التعليق)
         if (data.userId === currentUser.uid) {
           const editBtn = document.createElement("button");
-          editBtn.className = "delete-btn";
-          editBtn.style.left = "70px";
+          editBtn.className = "edit-btn";
           editBtn.textContent = "تعديل";
           editBtn.onclick = () => {
             const input = document.createElement("textarea");
-            input.value = data.text || "";
+            input.value = data.text;
             input.style.width = "100%";
             input.style.marginTop = "10px";
 
@@ -198,8 +225,10 @@
             saveBtn.textContent = "حفظ";
             saveBtn.style.marginTop = "10px";
 
-            commentDiv.replaceChild(input, commentDiv.children[1]);
-            commentDiv.appendChild(saveBtn);
+            messageDiv.innerHTML = "";
+            messageDiv.appendChild(input);
+            messageDiv.appendChild(document.createElement("br"));
+            messageDiv.appendChild(saveBtn);
 
             saveBtn.onclick = async () => {
               const newText = input.value.trim();
@@ -207,13 +236,18 @@
                 alert("النص لا يمكن أن يكون فارغًا");
                 return;
               }
-              await db.collection("news-comment").doc(doc.id).update({ text: newText });
+              if (newText.length > 160) {
+                alert("الحد الأقصى 160 حرفًا.");
+                return;
+              }
+
+              await db.collection("messages").doc(doc.id).update({ text: newText });
             };
           };
-          commentDiv.appendChild(editBtn);
+          messageDiv.appendChild(editBtn);
         }
 
-        commentsList.appendChild(commentDiv);
+        messagesList.appendChild(messageDiv);
       });
     });
   }
