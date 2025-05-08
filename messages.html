@@ -169,18 +169,6 @@
         messageDiv.appendChild(messageText);
         messageDiv.innerHTML += `<br/><small>${formattedDate}</small>`;
 
-        if (isAdmin) {
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "delete-btn";
-          deleteBtn.textContent = "حذف";
-          deleteBtn.onclick = async () => {
-            if (confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-              await db.collection("messages").doc(doc.id).delete();
-            }
-          };
-          messageDiv.appendChild(deleteBtn);
-        }
-
         if (data.userId === currentUser.uid) {
           const editBtn = document.createElement("button");
           editBtn.className = "delete-btn";
@@ -216,17 +204,6 @@
           };
 
           messageDiv.appendChild(editBtn);
-
-          // إضافة إمكانية حذف الرسالة من قبل المستخدم الذي أضافها
-          const deleteOwnBtn = document.createElement("button");
-          deleteOwnBtn.className = "delete-btn";
-          deleteOwnBtn.textContent = "حذف التعليق";
-          deleteOwnBtn.onclick = async () => {
-            if (confirm("هل أنت متأكد من حذف رسالتك؟")) {
-              await db.collection("messages").doc(doc.id).delete();
-            }
-          };
-          messageDiv.appendChild(deleteOwnBtn);
         }
 
         messagesList.appendChild(messageDiv);
