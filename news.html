@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>أخبار الضاحية</title>
+  <title>أخبار 1الضاحية</title>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -130,21 +130,25 @@
     const userData = userDoc.data();
     const userName = userData?.name || "مستخدم";
 
-    let imageUrl = "";
+    let imageUrl = "";  // متغير فارغ لربط الصورة لاحقًا
+
+    // إذا كان هناك ملف صورة، ارفعها إلى Firebase Storage
     if (file) {
       const storageRef = storage.ref().child("comment_images/" + Date.now() + "_" + file.name);
-      await storageRef.put(file);
-      imageUrl = await storageRef.getDownloadURL();
+      await storageRef.put(file);  // رفع الصورة إلى Firebase Storage
+      imageUrl = await storageRef.getDownloadURL();  // الحصول على رابط الصورة
     }
 
+    // تخزين التعليق في Firestore مع رابط الصورة
     await db.collection("news-comment").add({
       text,
-      imageUrl,
+      imageUrl,  // تخزين رابط الصورة في Firestore
       userId: currentUser.uid,
       userName,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
+    // مسح الحقول بعد إرسال التعليق
     input.value = "";
     document.getElementById("imageInput").value = "";
   }
@@ -165,52 +169,11 @@
 
         commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>`;
 
+        // عرض الصورة إذا كانت موجودة
         if (data.imageUrl) {
           const img = document.createElement("img");
-          img.src = data.imageUrl;
-          commentDiv.appendChild(img);
-        }
-
-        if (isAdmin) {
-          const deleteBtn = document.createElement("button");
-          deleteBtn.className = "delete-btn";
-          deleteBtn.textContent = "حذف";
-          deleteBtn.onclick = async () => {
-            if (confirm("هل أنت متأكد من حذف هذا التعليق؟")) {
-              await db.collection("news-comment").doc(doc.id).delete();
-            }
-          };
-          commentDiv.appendChild(deleteBtn);
-        }
-
-        if (data.userId === currentUser.uid) {
-          const editBtn = document.createElement("button");
-          editBtn.className = "delete-btn";
-          editBtn.style.left = "70px";
-          editBtn.textContent = "تعديل";
-          editBtn.onclick = () => {
-            const input = document.createElement("textarea");
-            input.value = data.text || "";
-            input.style.width = "100%";
-            input.style.marginTop = "10px";
-
-            const saveBtn = document.createElement("button");
-            saveBtn.textContent = "حفظ";
-            saveBtn.style.marginTop = "10px";
-
-            commentDiv.replaceChild(input, commentDiv.children[1]);
-            commentDiv.appendChild(saveBtn);
-
-            saveBtn.onclick = async () => {
-              const newText = input.value.trim();
-              if (!newText) {
-                alert("النص لا يمكن أن يكون فارغًا");
-                return;
-              }
-              await db.collection("news-comment").doc(doc.id).update({ text: newText });
-            };
-          };
-          commentDiv.appendChild(editBtn);
+          img.src = data.imageUrl;  // تعيين رابط الصورة
+          commentDiv.appendChild(img);  // إضافة الصورة إلى التعليق
         }
 
         commentsList.appendChild(commentDiv);
