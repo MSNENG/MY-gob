@@ -179,6 +179,7 @@
         const commentId = doc.id;  // معرف التعليق
         const commentDiv = document.createElement("div");
         commentDiv.className = "message";
+        commentDiv.id = `comment-${commentId}`; // إضافة معرف التعليق كـ id
 
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
@@ -219,6 +220,12 @@
   async function editComment(commentId, oldText) {
     // إنشاء مساحة للتعديل تحت التعليق
     const commentDiv = document.querySelector(`#comment-${commentId}`);
+    
+    // تحقق من وجود حقل تعديل بالفعل
+    if (commentDiv.querySelector('.edit-area')) {
+      return; // إذا كان هناك حقل تعديل بالفعل، لا تنشئ واحدًا جديدًا
+    }
+    
     let editArea = document.createElement("textarea");
     editArea.className = "edit-area";
     editArea.value = oldText;
@@ -235,6 +242,9 @@
       await db.collection("news-comment").doc(commentId).update({
         text: newText
       });
+
+      // إعادة تحميل التعليقات بعد الحفظ
+      listenToComments();
     }
   }
 </script>
