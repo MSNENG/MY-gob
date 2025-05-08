@@ -56,17 +56,23 @@
       border-right: 4px solid #6200ea;
       position: relative;
     }
-    .delete-btn {
+    .delete-btn, .edit-btn {
       position: absolute;
       top: 5px;
-      left: 5px;
-      background-color: red;
-      color: white;
-      border: none;
-      padding: 5px 10px;
       font-size: 12px;
       border-radius: 4px;
       cursor: pointer;
+      padding: 5px 10px;
+    }
+    .delete-btn {
+      left: 5px;
+      background-color: red;
+      color: white;
+    }
+    .edit-btn {
+      right: 5px;
+      background-color: #6200ea;
+      color: white;
     }
     .message img {
       max-width: 100%;
@@ -161,6 +167,7 @@
 
       snapshot.forEach((doc) => {
         const data = doc.data();
+        const commentId = doc.id;  // معرف التعليق
         const commentDiv = document.createElement("div");
         commentDiv.className = "message";
 
@@ -176,9 +183,40 @@
           commentDiv.appendChild(img);  // إضافة الصورة إلى التعليق
         }
 
+        // إضافة زر التعديل
+        if (data.userId === currentUser.uid || isAdmin) {
+          const editButton = document.createElement("button");
+          editButton.className = "edit-btn";
+          editButton.textContent = "تعديل";
+          editButton.onclick = () => editComment(commentId, data.text);
+          commentDiv.appendChild(editButton);
+        }
+
+        // إضافة زر الحذف
+        if (data.userId === currentUser.uid || isAdmin) {
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "delete-btn";
+          deleteButton.textContent = "حذف";
+          deleteButton.onclick = () => deleteComment(commentId);
+          commentDiv.appendChild(deleteButton);
+        }
+
         commentsList.appendChild(commentDiv);
       });
     });
+  }
+
+  async function deleteComment(commentId) {
+    await db.collection("news-comment").doc(commentId).delete();
+  }
+
+  async function editComment(commentId, oldText) {
+    const newText = prompt("عدل تعليقك:", oldText);
+    if (newText) {
+      await db.collection("news-comment").doc(commentId).update({
+        text: newText
+      });
+    }
   }
 </script>
 
