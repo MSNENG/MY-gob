@@ -162,12 +162,7 @@
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-        const messageText = document.createElement("span");
-        messageText.textContent = data.text;
-
-        messageDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>`;
-        messageDiv.appendChild(messageText);
-        messageDiv.innerHTML += `<br/><small>${formattedDate}</small>`;
+        messageDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text}<br/><small>${formattedDate}</small>`;
 
         if (isAdmin) {
           const deleteBtn = document.createElement("button");
@@ -189,7 +184,7 @@
 
           editBtn.onclick = () => {
             const input = document.createElement("textarea");
-            input.value = data.text;
+            input.value = data.text || "";
             input.style.width = "100%";
             input.style.marginTop = "10px";
 
@@ -197,8 +192,13 @@
             saveBtn.textContent = "حفظ";
             saveBtn.style.marginTop = "10px";
 
-            messageDiv.replaceChild(input, messageText);
+            const name = messageDiv.querySelector("strong").outerHTML;
+            const time = messageDiv.querySelector("small").outerHTML;
+
+            messageDiv.innerHTML = name + "<br/>";
+            messageDiv.appendChild(input);
             messageDiv.appendChild(saveBtn);
+            messageDiv.innerHTML += `<br/>${time}`;
 
             saveBtn.onclick = async () => {
               const newText = input.value.trim();
@@ -214,15 +214,3 @@
               await db.collection("messages").doc(doc.id).update({ text: newText });
             };
           };
-
-          messageDiv.appendChild(editBtn);
-        }
-
-        messagesList.appendChild(messageDiv);
-      });
-    });
-  }
-</script>
-
-</body>
-</html>
