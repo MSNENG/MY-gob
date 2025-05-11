@@ -4,183 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>أخبار عاجلة</title>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    let userNameSpan;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const paymentDate = data.paymentDate?.toDate?.();
-
-        if (!paymentDate) {
-          window.location.href = "payment.html";
-          return;
-        }
-
-        const now = new Date();
-        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
-
-        if (diffDays > 30) {
-          alert("انتهى اشتراكك. يرجى التجديد.");
-          window.location.href = "payment.html";
-          return;
-        }
-
-        userNameSpan.textContent = data.name || "مستخدم";
-      } else {
-        alert("لم يتم العثور على بيانات المستخدم.");
-        window.location.href = "payment.html";
-      }
-    });
-
-    window.onload = () => {
-      userNameSpan = document.getElementById("user-name");
-
-      document.getElementById("logout-btn").addEventListener("click", async () => {
-        try {
-          await signOut(auth);
-          window.location.href = "index.html";
-        } catch (error) {
-          alert("خطأ أثناء تسجيل الخروج: " + error.message);
-        }
-      });
-
-      document.getElementById("submit-comment").addEventListener("click", submitComment);
-      loadComments(); // تحميل التعليقات عند تحميل الصفحة
-    };
-
-    // إرسال التعليق
-    async function submitComment() {
-      const commentText = document.getElementById('comment-text').value;
-
-      if (commentText.trim() === "") {
-        alert("من فضلك أدخل تعليقًا");
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "emergency-comments"), {
-          text: commentText,
-          timestamp: serverTimestamp(),
-          userId: auth.currentUser.uid,
-        });
-        alert("تم إرسال تعليقك بنجاح!");
-        document.getElementById('comment-text').value = ""; // مسح الحقل بعد الإرسال
-        loadComments(); // إعادة تحميل التعليقات
-      } catch (error) {
-        console.error("حدث خطأ أثناء إرسال التعليق: ", error);
-        alert("حدث خطأ أثناء إرسال التعليق.");
-      }
-    }
-
-    // عرض التعليقات
-    async function loadComments() {
-      const querySnapshot = await getDocs(query(collection(db, "emergency-comments"), orderBy("timestamp", "desc")));
-      
-      const commentsContainer = document.getElementById('comments-container');
-      commentsContainer.innerHTML = ''; // مسح المحتوى الحالي
-
-      querySnapshot.forEach((doc) => {
-        const commentData = doc.data();
-        const commentId = doc.id;
-
-        const commentElement = document.createElement('div');
-        commentElement.classList.add('comment');
-
-        const titleElement = document.createElement('strong');
-        titleElement.textContent = `التعليق بتاريخ: ${new Date(commentData.timestamp.seconds * 1000).toLocaleString()}`;
-        
-        const textElement = document.createElement('p');
-        textElement.textContent = commentData.text;
-
-        // إضافة زر تعديل (إذا كان المستخدم هو الذي أضاف التعليق)
-        if (commentData.userId === auth.currentUser.uid) {
-          const editButton = document.createElement('button');
-          editButton.textContent = "تعديل";
-          editButton.onclick = () => editComment(commentId);
-          commentElement.appendChild(editButton);
-        }
-
-        // إضافة زر حذف للمشرف فقط
-        const userRef = doc(db, "users", auth.currentUser.uid);
-        getDoc(userRef).then(userSnap => {
-          const userData = userSnap.data();
-          if (userData.role === 'admin') {
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = "حذف";
-            deleteButton.onclick = () => deleteComment(commentId);
-            commentElement.appendChild(deleteButton);
-          }
-        });
-
-        commentElement.appendChild(titleElement);
-        commentElement.appendChild(textElement);
-        commentsContainer.appendChild(commentElement);
-      });
-    }
-
-    // حذف تعليق
-    async function deleteComment(commentId) {
-      try {
-        await deleteDoc(doc(db, "emergency-comments", commentId));
-        alert("تم حذف التعليق بنجاح");
-        loadComments(); // إعادة تحميل التعليقات بعد الحذف
-      } catch (error) {
-        console.error("حدث خطأ أثناء حذف التعليق: ", error);
-        alert("حدث خطأ أثناء حذف التعليق.");
-      }
-    }
-
-    // تعديل تعليق
-    async function editComment(commentId) {
-      const newText = prompt("أدخل النص الجديد للتعليق:");
-
-      if (newText && newText.trim() !== "") {
-        try {
-          const commentRef = doc(db, "emergency-comments", commentId);
-          await updateDoc(commentRef, {
-            text: newText,
-          });
-          alert("تم تعديل التعليق بنجاح!");
-          loadComments(); // إعادة تحميل التعليقات بعد التعديل
-        } catch (error) {
-          console.error("حدث خطأ أثناء تعديل التعليق: ", error);
-          alert("حدث خطأ أثناء تعديل التعليق.");
-        }
-      } else {
-        alert("يرجى إدخال نص جديد.");
-      }
-    }
-  </script>
-
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -217,33 +40,6 @@
     .logout-btn:hover {
       background-color: #c62828;
     }
-
-    .buttons-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      align-items: center;
-      max-width: 300px;
-      margin: 0 auto;
-    }
-
-    .number-btn {
-      background-color: #6200ea;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      font-size: 20px;
-      border-radius: 12px;
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.3s;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .number-btn:hover {
-      background-color: #3700b3;
-      transform: translateY(-2px);
-    }
   </style>
 </head>
 <body>
@@ -264,5 +60,179 @@
     <!-- سيتم عرض التعليقات هنا -->
   </div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, doc,
+      deleteDoc, updateDoc, serverTimestamp, query,
+      orderBy, getDoc
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let userNameSpan;
+
+    window.onload = () => {
+      userNameSpan = document.getElementById("user-name");
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          window.location.href = "index.html";
+        } catch (error) {
+          alert("خطأ أثناء تسجيل الخروج: " + error.message);
+        }
+      });
+
+      document.getElementById("submit-comment").addEventListener("click", submitComment);
+      loadComments();
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const paymentDate = data.paymentDate?.toDate?.();
+
+        if (!paymentDate) {
+          window.location.href = "payment.html";
+          return;
+        }
+
+        const now = new Date();
+        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 30) {
+          alert("انتهى اشتراكك. يرجى التجديد.");
+          window.location.href = "payment.html";
+          return;
+        }
+
+        if (userNameSpan) {
+          userNameSpan.textContent = data.name || "مستخدم";
+        }
+      } else {
+        alert("لم يتم العثور على بيانات المستخدم.");
+        window.location.href = "payment.html";
+      }
+    });
+
+    async function submitComment() {
+      const commentText = document.getElementById('comment-text').value;
+
+      if (commentText.trim() === "") {
+        alert("من فضلك أدخل تعليقًا");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "emergency-comments"), {
+          text: commentText,
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser.uid,
+        });
+        alert("تم إرسال تعليقك بنجاح!");
+        document.getElementById('comment-text').value = "";
+        loadComments();
+      } catch (error) {
+        console.error("حدث خطأ أثناء إرسال التعليق: ", error);
+        alert("حدث خطأ أثناء إرسال التعليق.");
+      }
+    }
+
+    async function loadComments() {
+      const querySnapshot = await getDocs(query(collection(db, "emergency-comments"), orderBy("timestamp", "desc")));
+      const commentsContainer = document.getElementById('comments-container');
+      commentsContainer.innerHTML = '';
+
+      querySnapshot.forEach((docItem) => {
+        const commentData = docItem.data();
+        const commentId = docItem.id;
+
+        const commentElement = document.createElement('div');
+        commentElement.classList.add('comment');
+
+        const titleElement = document.createElement('strong');
+        titleElement.textContent = `التعليق بتاريخ: ${
+          commentData.timestamp?.seconds ? new Date(commentData.timestamp.seconds * 1000).toLocaleString() : "بدون وقت"
+        }`;
+
+        const textElement = document.createElement('p');
+        textElement.textContent = commentData.text;
+
+        if (commentData.userId === auth.currentUser?.uid) {
+          const editButton = document.createElement('button');
+          editButton.textContent = "تعديل";
+          editButton.onclick = () => editComment(commentId);
+          commentElement.appendChild(editButton);
+        }
+
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        getDoc(userRef).then(userSnap => {
+          const userData = userSnap.data();
+          if (userData.role === 'admin') {
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = "حذف";
+            deleteButton.onclick = () => deleteComment(commentId);
+            commentElement.appendChild(deleteButton);
+          }
+        });
+
+        commentElement.appendChild(titleElement);
+        commentElement.appendChild(textElement);
+        commentsContainer.appendChild(commentElement);
+      });
+    }
+
+    async function deleteComment(commentId) {
+      try {
+        await deleteDoc(doc(db, "emergency-comments", commentId));
+        alert("تم حذف التعليق بنجاح");
+        loadComments();
+      } catch (error) {
+        console.error("حدث خطأ أثناء حذف التعليق: ", error);
+        alert("حدث خطأ أثناء حذف التعليق.");
+      }
+    }
+
+    async function editComment(commentId) {
+      const newText = prompt("أدخل النص الجديد للتعليق:");
+      if (newText && newText.trim() !== "") {
+        try {
+          const commentRef = doc(db, "emergency-comments", commentId);
+          await updateDoc(commentRef, {
+            text: newText,
+          });
+          alert("تم تعديل التعليق بنجاح!");
+          loadComments();
+        } catch (error) {
+          console.error("حدث خطأ أثناء تعديل التعليق: ", error);
+          alert("حدث خطأ أثناء تعديل التعليق.");
+        }
+      } else {
+        alert("يرجى إدخال نص جديد.");
+      }
+    }
+  </script>
 </body>
 </html>
