@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>المواهب</title>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -71,7 +70,7 @@
     }
     .edit-btn {
       left: 60px;
-      background-color: orange;
+      background-color: red;
       color: white;
     }
     .message img {
@@ -88,16 +87,11 @@
       border-radius: 8px;
       border: 1px solid #ccc;
     }
-    .back-btn {
-      margin-bottom: 20px;
-      background-color: #444;
-    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <button class="back-btn" onclick="window.location.href='home.html'">⬅ الرجوع للصفحة الرئيسية</button>
   <h2>المواهب</h2>
   <textarea id="commentInput" placeholder="اكتب تعليقك هنا..."></textarea>
   <input type="file" id="imageInput" accept="image/*" />
@@ -121,6 +115,7 @@
   const storage = firebase.storage();
 
   const COLLECTION_NAME = "Talents";
+
   let currentUser = null;
   let isAdmin = false;
 
@@ -193,61 +188,4 @@
         const date = data.timestamp?.toDate?.();
         const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
 
-        commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>`;
-
-        if (data.imageUrl) {
-          const img = document.createElement("img");
-          img.src = data.imageUrl;
-          commentDiv.appendChild(img);
-        }
-
-        if (data.userId === currentUser.uid || isAdmin) {
-          const editButton = document.createElement("button");
-          editButton.className = "edit-btn";
-          editButton.textContent = "تعديل";
-          editButton.onclick = () => editComment(commentId, data.text);
-          commentDiv.appendChild(editButton);
-
-          const deleteButton = document.createElement("button");
-          deleteButton.className = "delete-btn";
-          deleteButton.textContent = "حذف";
-          deleteButton.onclick = () => deleteComment(commentId);
-          commentDiv.appendChild(deleteButton);
-        }
-
-        commentsList.appendChild(commentDiv);
-      });
-    });
-  }
-
-  async function deleteComment(commentId) {
-    await db.collection(COLLECTION_NAME).doc(commentId).delete();
-  }
-
-  async function editComment(commentId, oldText) {
-    const commentDiv = document.querySelector(`#comment-${commentId}`);
-    if (commentDiv.querySelector('.edit-area')) return;
-
-    let editArea = document.createElement("textarea");
-    editArea.className = "edit-area";
-    editArea.value = oldText;
-    const saveButton = document.createElement("button");
-    saveButton.textContent = "حفظ التعديل";
-    saveButton.onclick = () => saveEdit(commentId, editArea.value);
-
-    commentDiv.appendChild(editArea);
-    commentDiv.appendChild(saveButton);
-  }
-
-  async function saveEdit(commentId, newText) {
-    if (newText.trim()) {
-      await db.collection(COLLECTION_NAME).doc(commentId).update({
-        text: newText
-      });
-      listenToComments();
-    }
-  }
-</script>
-
-</body>
-</html>
+        commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text ||
