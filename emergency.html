@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>التعليقات الطارئة</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser;
+    let commentsCollection;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html"; // إعادة التوجيه إذا لم يكن المستخدم مسجلًا
+        return;
+      }
+
+      currentUser = user;
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+
+      // تحقق من صلاحيات المشرف
+      if (userData.role !== 'admin') {
+        alert("ليس لديك صلاحية للوصول إلى هذه الصفحة.");
+      }
+
+      commentsCollection = collection(db, "emergency-comments");
+
+      // عرض التعليقات
+      loadComments();
+    });
+
+    async function loadComments() {
+      const querySnapshot = await getDocs(commentsCollection);
+      const commentsList = document.getElementById("comments-list");
+      commentsList.innerHTML = ""; // تنظيف المحتوى الحالي
+
+      querySnapshot.forEach((doc) => {
+        const comment = doc.data();
+        const commentId = doc.id;
+        const commentDiv = document.createElement("div");
+        commentDiv.classList.add("comment");
+
+        commentDiv.innerHTML = `
+          <h3 class="comment-title">${comment.title}</h3>
+          <p class="comment-text">${comment.text}</p>
+          <p class="comment-date">${new Date(comment.timestamp.seconds * 1000).toLocaleString()}</p>
+          ${currentUser.uid === comment.userId ? `
+            <button class="edit-btn" onclick="editComment('${commentId}')">تعديل</button>
+            <button class="delete-btn" onclick="deleteComment('${commentId}')">حذف</button>
+          ` : ""}
+          ${currentUser.role === 'admin' ? `
+            <button class="delete-btn" onclick="deleteComment('${commentId}')">حذف من قبل المشرف</button>
+          ` : ""}
+        `;
+
+        commentsList.appendChild(commentDiv);
+      });
+    }
+
+    async function addComment() {
+      const title = document.getElementById("comment-title").value;
+      const text = document.getElementById("comment-text").value;
+
+      if (!title || !text) {
+        alert("يرجى ملء كافة الحقول.");
+        return;
+      }
+
+      try {
+        await addDoc(commentsCollection, {
+          title: title,
+          text: text,
+          userId: currentUser.uid,
+          timestamp: serverTimestamp(),
+        });
+
+        alert("تم إضافة التعليق!");
+        loadComments();
+      } catch (error) {
+        alert("حدث خطأ أثناء إضافة التعليق: " + error.message);
+      }
+    }
+
+    async function editComment(commentId) {
+      const newTitle = prompt("أدخل العنوان الجديد:");
+      const newText = prompt("أدخل النص الجديد:");
+
+      if (!newTitle || !newText) {
+        alert("يرجى ملء كافة الحقول.");
+        return;
+      }
+
+      const commentRef = doc(db, "emergency-comments", commentId);
+
+      try {
+        await updateDoc(commentRef, {
+          title: newTitle,
+          text: newText,
+          timestamp: serverTimestamp(),
+        });
+
+        alert("تم تعديل التعليق!");
+        loadComments();
+      } catch (error) {
+        alert("حدث خطأ أثناء تعديل التعليق: " + error.message);
+      }
+    }
+
+    async function deleteComment(commentId) {
+      const confirmDelete = confirm("هل أنت متأكد من حذف هذا التعليق؟");
+
+      if (confirmDelete) {
+        try {
+          await deleteDoc(doc(db, "emergency-comments", commentId));
+          alert("تم حذف التعليق!");
+          loadComments();
+        } catch (error) {
+          alert("حدث خطأ أثناء حذف التعليق: " + error.message);
+        }
+      }
+    }
+
+    window.onload = () => {
+      document.getElementById("add-comment-btn").addEventListener("click", addComment);
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #6200ea;
+    }
+
+    .comment-title {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .comment-text {
+      margin: 10px 0;
+      color: #555;
+    }
+
+    .comment-date {
+      color: #777;
+      font-size: 0.9em;
+    }
+
+    .comment {
+      margin-bottom: 20px;
+      padding: 10px;
+      background-color: #e1bee7;
+      border-radius: 5px;
+    }
+
+    .edit-btn, .delete-btn {
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .delete-btn {
+      background-color: #f44336;
+    }
+
+    .edit-btn:hover, .delete-btn:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>التعليقات الطارئة</h1>
+
+    <input type="text" id="comment-title" placeholder="أدخل عنوان التعليق" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+    <textarea id="comment-text" placeholder="أدخل نص التعليق" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 20px; border-radius: 5px;"></textarea>
+    <button id="add-comment-btn" class="edit-btn">إضافة تعليق</button>
+
+    <div id="comments-list"></div>
+  </div>
+</body>
+</html>
