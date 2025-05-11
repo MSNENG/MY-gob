@@ -3,198 +3,251 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>الصفحة الرئيسية</title>
+  <title>المواهب</title>
 
   <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    let userNameSpan;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const paymentDate = data.paymentDate?.toDate?.();
-
-        if (!paymentDate) {
-          window.location.href = "payment.html";
-          return;
-        }
-
-        const now = new Date();
-        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
-
-        if (diffDays > 30) {
-          alert("انتهى اشتراكك. يرجى التجديد.");
-          window.location.href = "payment.html";
-          return;
-        }
-
-        userNameSpan.textContent = data.name || "مستخدم";
-
-      } else {
-        alert("لم يتم العثور على بيانات المستخدم.");
-        window.location.href = "payment.html";
-      }
-    });
-
-    window.onload = () => {
-      userNameSpan = document.getElementById("user-name");
-
-      document.getElementById("logout-btn").addEventListener("click", async () => {
-        try {
-          await signOut(auth);
-          window.location.href = "index.html";
-        } catch (error) {
-          alert("خطأ أثناء تسجيل الخروج: " + error.message);
-        }
-      });
-
-      document.getElementById("btn-messages").addEventListener("click", () => {
-        window.location.href = "messages.html";
-      });
-
-      document.getElementById("btn-2").addEventListener("click", () => {
-        window.location.href = "news.html";
-      });
-
-      document.getElementById("btn-3").addEventListener("click", () => {
-        window.location.href = "General-news.html";
-      });
-
-      document.getElementById("btn-4").addEventListener("click", () => {
-        window.location.href = "article-page.html";
-      });
-
-      document.getElementById("btn-5").addEventListener("click", () => {
-        window.location.href = "Talents.html"; // ✅ التعديل هنا
-      });
-
-      document.getElementById("btn-6").addEventListener("click", () => {
-        window.location.href = "questions.html";
-      });
-
-      document.getElementById("btn-7").addEventListener("click", () => {
-        window.location.href = "breaking-news.html";
-      });
-
-      document.getElementById("btn-8").addEventListener("click", () => {
-        window.location.href = "ads.html";
-      });
-
-      document.getElementById("btn-9").addEventListener("click", () => {
-        window.location.href = "seven.html";
-      });
-    };
-  </script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      margin: 0;
-      padding: 20px;
       background-color: #f0f0f0;
-      direction: rtl;
+      padding: 20px;
       text-align: center;
     }
-
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 15px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-radius: 8px;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .logout-btn {
-      background-color: #e53935;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 16px;
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
       border-radius: 10px;
-      cursor: pointer;
-      transition: background-color 0.3s;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
-    .logout-btn:hover {
-      background-color: #c62828;
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
     }
-
-    .buttons-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      align-items: center;
-      max-width: 300px;
-      margin: 0 auto;
+    input[type="file"] {
+      margin-bottom: 10px;
     }
-
-    .number-btn {
+    button {
+      padding: 10px 20px;
       background-color: #6200ea;
       color: white;
+      font-size: 16px;
       border: none;
-      padding: 15px 30px;
-      font-size: 20px;
-      border-radius: 12px;
+      border-radius: 8px;
       cursor: pointer;
-      width: 100%;
-      transition: all 0.3s;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-
-    .number-btn:hover {
-      background-color: #3700b3;
-      transform: translateY(-2px);
+    .message {
+      text-align: right;
+      background: #f9f9f9;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border-right: 4px solid #6200ea;
+      position: relative;
+    }
+    .delete-btn, .edit-btn {
+      position: absolute;
+      top: 5px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 5px 10px;
+    }
+    .delete-btn {
+      left: 5px;
+      background-color: red;
+      color: white;
+    }
+    .edit-btn {
+      left: 60px;
+      background-color: orange;
+      color: white;
+    }
+    .message img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    .edit-area {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .back-btn {
+      margin-bottom: 20px;
+      background-color: #444;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <span>مرحبًا، <span id="user-name">...</span></span>
-    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
-  </header>
+<div class="container">
+  <button class="back-btn" onclick="window.location.href='home.html'">⬅ الرجوع للصفحة الرئيسية</button>
+  <h2>المواهب</h2>
+  <textarea id="commentInput" placeholder="اكتب تعليقك هنا..."></textarea>
+  <input type="file" id="imageInput" accept="image/*" />
+  <button onclick="sendComment()">إرسال</button>
+  <div id="commentsList" style="margin-top: 30px;"></div>
+</div>
 
-  <div class="buttons-container">
-    <button id="btn-messages" class="number-btn">رسالة</button>
-    <button id="btn-2" class="number-btn">أخبار الضاحية</button>
-    <button id="btn-3" class="number-btn">أخبار عامة</button>
-    <button id="btn-4" class="number-btn">مقالات أهل الضاحية</button>
-    <button id="btn-5" class="number-btn">مواهب</button> <!-- ✅ تغيير الاسم -->
-    <button id="btn-6" class="number-btn">إستفسارات</button>
-    <button id="btn-7" class="number-btn">أخبار عاجلة</button>
-    <button id="btn-8" class="number-btn">إعلانات</button>
-    <button id="btn-9" class="number-btn">7</button>
-  </div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+    authDomain: "my-gob.firebaseapp.com",
+    projectId: "my-gob",
+    storageBucket: "my-gob.appspot.com",
+    messagingSenderId: "464127979375",
+    appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  const COLLECTION_NAME = "Talents";
+  let currentUser = null;
+  let isAdmin = false;
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    currentUser = user;
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const userData = userDoc.data();
+    isAdmin = userData?.role === "admin";
+    listenToComments();
+  });
+
+  async function sendComment() {
+    const input = document.getElementById("commentInput");
+    const text = input.value.trim();
+    const file = document.getElementById("imageInput").files[0];
+
+    if (!text && !file) {
+      alert("يرجى كتابة تعليق أو إرفاق صورة على الأقل");
+      return;
+    }
+
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+    const userData = userDoc.data();
+    const userName = userData?.name || "مستخدم";
+
+    let imageUrl = "";
+
+    if (file) {
+      try {
+        const storageRef = storage.ref().child("comment_images/" + Date.now() + "_" + file.name);
+        const uploadTask = await storageRef.put(file);
+        imageUrl = await uploadTask.ref.getDownloadURL();
+      } catch (error) {
+        console.error("حدث خطأ أثناء رفع الصورة: ", error);
+        alert("حدث خطأ أثناء رفع الصورة. الرجاء المحاولة لاحقًا.");
+        return;
+      }
+    }
+
+    await db.collection(COLLECTION_NAME).add({
+      text,
+      imageUrl,
+      userId: currentUser.uid,
+      userName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    input.value = "";
+    document.getElementById("imageInput").value = "";
+  }
+
+  function listenToComments() {
+    const commentsList = document.getElementById("commentsList");
+
+    db.collection(COLLECTION_NAME).orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+      commentsList.innerHTML = "";
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const commentId = doc.id;
+        const commentDiv = document.createElement("div");
+        commentDiv.className = "message";
+        commentDiv.id = `comment-${commentId}`;
+
+        const date = data.timestamp?.toDate?.();
+        const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
+
+        commentDiv.innerHTML = `<strong>${data.userName || "مستخدم مجهول"}</strong><br/>${data.text || ""}<br/><small>${formattedDate}</small>`;
+
+        if (data.imageUrl) {
+          const img = document.createElement("img");
+          img.src = data.imageUrl;
+          commentDiv.appendChild(img);
+        }
+
+        if (data.userId === currentUser.uid || isAdmin) {
+          const editButton = document.createElement("button");
+          editButton.className = "edit-btn";
+          editButton.textContent = "تعديل";
+          editButton.onclick = () => editComment(commentId, data.text);
+          commentDiv.appendChild(editButton);
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "delete-btn";
+          deleteButton.textContent = "حذف";
+          deleteButton.onclick = () => deleteComment(commentId);
+          commentDiv.appendChild(deleteButton);
+        }
+
+        commentsList.appendChild(commentDiv);
+      });
+    });
+  }
+
+  async function deleteComment(commentId) {
+    await db.collection(COLLECTION_NAME).doc(commentId).delete();
+  }
+
+  async function editComment(commentId, oldText) {
+    const commentDiv = document.querySelector(`#comment-${commentId}`);
+    if (commentDiv.querySelector('.edit-area')) return;
+
+    let editArea = document.createElement("textarea");
+    editArea.className = "edit-area";
+    editArea.value = oldText;
+    const saveButton = document.createElement("button");
+    saveButton.textContent = "حفظ التعديل";
+    saveButton.onclick = () => saveEdit(commentId, editArea.value);
+
+    commentDiv.appendChild(editArea);
+    commentDiv.appendChild(saveButton);
+  }
+
+  async function saveEdit(commentId, newText) {
+    if (newText.trim()) {
+      await db.collection(COLLECTION_NAME).doc(commentId).update({
+        text: newText
+      });
+      listenToComments();
+    }
+  }
+</script>
 
 </body>
 </html>
