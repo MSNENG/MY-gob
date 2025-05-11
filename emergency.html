@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>التعليقات الطارئة</title>
+  <title>أخبار عاجلة</title>
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -25,201 +25,244 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currentUser;
-    let commentsCollection;
+    let userNameSpan;
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        window.location.href = "index.html"; // إعادة التوجيه إذا لم يكن المستخدم مسجلًا
+        window.location.href = "index.html";
         return;
       }
 
-      currentUser = user;
       const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.data();
+      const docSnap = await getDoc(userRef);
 
-      // تحقق من صلاحيات المشرف
-      if (userData.role !== 'admin') {
-        alert("ليس لديك صلاحية للوصول إلى هذه الصفحة.");
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const paymentDate = data.paymentDate?.toDate?.();
+
+        if (!paymentDate) {
+          window.location.href = "payment.html";
+          return;
+        }
+
+        const now = new Date();
+        const diffDays = Math.floor((now - paymentDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 30) {
+          alert("انتهى اشتراكك. يرجى التجديد.");
+          window.location.href = "payment.html";
+          return;
+        }
+
+        userNameSpan.textContent = data.name || "مستخدم";
+      } else {
+        alert("لم يتم العثور على بيانات المستخدم.");
+        window.location.href = "payment.html";
       }
-
-      commentsCollection = collection(db, "emergency-comments");
-
-      // عرض التعليقات
-      loadComments();
     });
 
+    window.onload = () => {
+      userNameSpan = document.getElementById("user-name");
+
+      document.getElementById("logout-btn").addEventListener("click", async () => {
+        try {
+          await signOut(auth);
+          window.location.href = "index.html";
+        } catch (error) {
+          alert("خطأ أثناء تسجيل الخروج: " + error.message);
+        }
+      });
+
+      document.getElementById("submit-comment").addEventListener("click", submitComment);
+      loadComments(); // تحميل التعليقات عند تحميل الصفحة
+    };
+
+    // إرسال التعليق
+    async function submitComment() {
+      const commentText = document.getElementById('comment-text').value;
+
+      if (commentText.trim() === "") {
+        alert("من فضلك أدخل تعليقًا");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "emergency-comments"), {
+          text: commentText,
+          timestamp: serverTimestamp(),
+          userId: auth.currentUser.uid,
+        });
+        alert("تم إرسال تعليقك بنجاح!");
+        document.getElementById('comment-text').value = ""; // مسح الحقل بعد الإرسال
+        loadComments(); // إعادة تحميل التعليقات
+      } catch (error) {
+        console.error("حدث خطأ أثناء إرسال التعليق: ", error);
+        alert("حدث خطأ أثناء إرسال التعليق.");
+      }
+    }
+
+    // عرض التعليقات
     async function loadComments() {
-      const querySnapshot = await getDocs(commentsCollection);
-      const commentsList = document.getElementById("comments-list");
-      commentsList.innerHTML = ""; // تنظيف المحتوى الحالي
+      const querySnapshot = await getDocs(query(collection(db, "emergency-comments"), orderBy("timestamp", "desc")));
+      
+      const commentsContainer = document.getElementById('comments-container');
+      commentsContainer.innerHTML = ''; // مسح المحتوى الحالي
 
       querySnapshot.forEach((doc) => {
-        const comment = doc.data();
+        const commentData = doc.data();
         const commentId = doc.id;
-        const commentDiv = document.createElement("div");
-        commentDiv.classList.add("comment");
 
-        commentDiv.innerHTML = `
-          <h3 class="comment-title">${comment.title}</h3>
-          <p class="comment-text">${comment.text}</p>
-          <p class="comment-date">${new Date(comment.timestamp.seconds * 1000).toLocaleString()}</p>
-          ${currentUser.uid === comment.userId ? `
-            <button class="edit-btn" onclick="editComment('${commentId}')">تعديل</button>
-            <button class="delete-btn" onclick="deleteComment('${commentId}')">حذف</button>
-          ` : ""}
-          ${currentUser.role === 'admin' ? `
-            <button class="delete-btn" onclick="deleteComment('${commentId}')">حذف من قبل المشرف</button>
-          ` : ""}
-        `;
+        const commentElement = document.createElement('div');
+        commentElement.classList.add('comment');
 
-        commentsList.appendChild(commentDiv);
+        const titleElement = document.createElement('strong');
+        titleElement.textContent = `التعليق بتاريخ: ${new Date(commentData.timestamp.seconds * 1000).toLocaleString()}`;
+        
+        const textElement = document.createElement('p');
+        textElement.textContent = commentData.text;
+
+        // إضافة زر تعديل (إذا كان المستخدم هو الذي أضاف التعليق)
+        if (commentData.userId === auth.currentUser.uid) {
+          const editButton = document.createElement('button');
+          editButton.textContent = "تعديل";
+          editButton.onclick = () => editComment(commentId);
+          commentElement.appendChild(editButton);
+        }
+
+        // إضافة زر حذف للمشرف فقط
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        getDoc(userRef).then(userSnap => {
+          const userData = userSnap.data();
+          if (userData.role === 'admin') {
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = "حذف";
+            deleteButton.onclick = () => deleteComment(commentId);
+            commentElement.appendChild(deleteButton);
+          }
+        });
+
+        commentElement.appendChild(titleElement);
+        commentElement.appendChild(textElement);
+        commentsContainer.appendChild(commentElement);
       });
     }
 
-    async function addComment() {
-      const title = document.getElementById("comment-title").value;
-      const text = document.getElementById("comment-text").value;
-
-      if (!title || !text) {
-        alert("يرجى ملء كافة الحقول.");
-        return;
-      }
-
-      try {
-        // إرسال التعليق إلى Firebase
-        const docRef = await addDoc(commentsCollection, {
-          title: title,
-          text: text,
-          userId: currentUser.uid,
-          timestamp: serverTimestamp(),
-        });
-
-        console.log("تم إضافة التعليق بنجاح:", docRef.id);
-        alert("تم إضافة التعليق!");
-        loadComments();
-      } catch (error) {
-        console.error("حدث خطأ أثناء إضافة التعليق:", error);
-        alert("حدث خطأ أثناء إضافة التعليق: " + error.message);
-      }
-    }
-
-    async function editComment(commentId) {
-      const newTitle = prompt("أدخل العنوان الجديد:");
-      const newText = prompt("أدخل النص الجديد:");
-
-      if (!newTitle || !newText) {
-        alert("يرجى ملء كافة الحقول.");
-        return;
-      }
-
-      const commentRef = doc(db, "emergency-comments", commentId);
-
-      try {
-        await updateDoc(commentRef, {
-          title: newTitle,
-          text: newText,
-          timestamp: serverTimestamp(),
-        });
-
-        alert("تم تعديل التعليق!");
-        loadComments();
-      } catch (error) {
-        alert("حدث خطأ أثناء تعديل التعليق: " + error.message);
-      }
-    }
-
+    // حذف تعليق
     async function deleteComment(commentId) {
-      const confirmDelete = confirm("هل أنت متأكد من حذف هذا التعليق؟");
-
-      if (confirmDelete) {
-        try {
-          await deleteDoc(doc(db, "emergency-comments", commentId));
-          alert("تم حذف التعليق!");
-          loadComments();
-        } catch (error) {
-          alert("حدث خطأ أثناء حذف التعليق: " + error.message);
-        }
+      try {
+        await deleteDoc(doc(db, "emergency-comments", commentId));
+        alert("تم حذف التعليق بنجاح");
+        loadComments(); // إعادة تحميل التعليقات بعد الحذف
+      } catch (error) {
+        console.error("حدث خطأ أثناء حذف التعليق: ", error);
+        alert("حدث خطأ أثناء حذف التعليق.");
       }
     }
 
-    window.onload = () => {
-      document.getElementById("add-comment-btn").addEventListener("click", addComment);
-    };
+    // تعديل تعليق
+    async function editComment(commentId) {
+      const newText = prompt("أدخل النص الجديد للتعليق:");
+
+      if (newText && newText.trim() !== "") {
+        try {
+          const commentRef = doc(db, "emergency-comments", commentId);
+          await updateDoc(commentRef, {
+            text: newText,
+          });
+          alert("تم تعديل التعليق بنجاح!");
+          loadComments(); // إعادة تحميل التعليقات بعد التعديل
+        } catch (error) {
+          console.error("حدث خطأ أثناء تعديل التعليق: ", error);
+          alert("حدث خطأ أثناء تعديل التعليق.");
+        }
+      } else {
+        alert("يرجى إدخال نص جديد.");
+      }
+    }
   </script>
 
   <style>
     body {
       font-family: 'Cairo', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+      direction: rtl;
       text-align: center;
-      padding: 20px;
-      background-color: #f4f4f4;
     }
 
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: white;
+    header {
+      background-color: #6200ea;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    h1 {
-      color: #6200ea;
-    }
-
-    .comment-title {
-      font-weight: bold;
-      color: #333;
-    }
-
-    .comment-text {
-      margin: 10px 0;
-      color: #555;
-    }
-
-    .comment-date {
-      color: #777;
-      font-size: 0.9em;
-    }
-
-    .comment {
-      margin-bottom: 20px;
-      padding: 10px;
-      background-color: #e1bee7;
-      border-radius: 5px;
-    }
-
-    .edit-btn, .delete-btn {
-      background-color: #4caf50;
+    .logout-btn {
+      background-color: #e53935;
       color: white;
       border: none;
       padding: 10px 20px;
-      margin: 5px;
-      border-radius: 5px;
+      font-size: 16px;
+      border-radius: 10px;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
 
-    .delete-btn {
-      background-color: #f44336;
+    .logout-btn:hover {
+      background-color: #c62828;
     }
 
-    .edit-btn:hover, .delete-btn:hover {
-      opacity: 0.8;
+    .buttons-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      align-items: center;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+
+    .number-btn {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .number-btn:hover {
+      background-color: #3700b3;
+      transform: translateY(-2px);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>التعليقات الطارئة</h1>
 
-    <input type="text" id="comment-title" placeholder="أدخل عنوان التعليق" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
-    <textarea id="comment-text" placeholder="أدخل نص التعليق" style="width: 100%; height: 100px; padding: 10px; margin-bottom: 20px; border-radius: 5px;"></textarea>
-    <button id="add-comment-btn" class="edit-btn">إضافة تعليق</button>
+  <header>
+    <span>مرحبًا، <span id="user-name">...</span></span>
+    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+  </header>
 
-    <div id="comments-list"></div>
+  <h2>أخبار عاجلة</h2>
+
+  <div>
+    <textarea id="comment-text" placeholder="اكتب تعليقك هنا..."></textarea>
+    <button id="submit-comment">إرسال تعليق</button>
   </div>
+
+  <div id="comments-container">
+    <!-- سيتم عرض التعليقات هنا -->
+  </div>
+
 </body>
 </html>
