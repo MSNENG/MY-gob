@@ -88,16 +88,19 @@
       }
 
       try {
-        await addDoc(commentsCollection, {
+        // إرسال التعليق إلى Firebase
+        const docRef = await addDoc(commentsCollection, {
           title: title,
           text: text,
           userId: currentUser.uid,
           timestamp: serverTimestamp(),
         });
 
+        console.log("تم إضافة التعليق بنجاح:", docRef.id);
         alert("تم إضافة التعليق!");
         loadComments();
       } catch (error) {
+        console.error("حدث خطأ أثناء إضافة التعليق:", error);
         alert("حدث خطأ أثناء إضافة التعليق: " + error.message);
       }
     }
