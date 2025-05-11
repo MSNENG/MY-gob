@@ -29,6 +29,7 @@
 
     window.onload = () => {
       const payButton = document.getElementById("pay-btn");
+      const infoLink = document.getElementById("info-link"); // الحصول على العنصر الخاص بالجملة التفاعلية
 
       onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -50,6 +51,11 @@
         } catch (error) {
           alert("حدث خطأ أثناء تحديث الدفع: " + error.message);
         }
+      });
+
+      // إضافة حدث للنقل إلى صفحة why-pay عند الضغط على الجملة التفاعلية
+      infoLink.addEventListener("click", () => {
+        window.location.href = "why-pay.html";
       });
     };
   </script>
@@ -81,11 +87,27 @@
     .button:hover {
       background-color: #6a1b9a;
     }
+
+    .info-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #4a148c;
+      font-size: 18px;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .info-link:hover {
+      color: #6a1b9a;
+    }
   </style>
 </head>
 <body>
   <h1>الدفع</h1>
   <p>اضغط على الزر لإتمام عملية الدفع (وهمية)</p>
   <button id="pay-btn" class="button">إتمام الدفع</button>
+
+  <!-- جملة تفاعلية -->
+  <p><span id="info-link" class="info-link">لماذا يجب علي الدفع؟</span></p>
 </body>
 </html>
