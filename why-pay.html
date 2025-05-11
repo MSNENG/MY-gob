@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>لماذا يجب علي الدفع؟</title>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser;
+    let isAdmin = false;
+
+    window.onload = () => {
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          const userRef = doc(db, "users", currentUser.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            isAdmin = userData?.role === "admin"; // التأكد من كون المستخدم مشرفًا
+            toggleEditButton(); // عرض أو إخفاء زر التعديل بناءً على الصلاحيات
+          }
+        } else {
+          window.location.href = "index.html"; // إعادة التوجيه إذا لم يكن المستخدم مسجلًا
+        }
+      });
+    };
+
+    // إظهار أو إخفاء زر التعديل بناءً على كون المستخدم مشرفًا
+    function toggleEditButton() {
+      const editButton = document.getElementById("edit-btn");
+      if (isAdmin) {
+        editButton.style.display = "inline-block"; // إظهار زر التعديل إذا كان المستخدم مشرفًا
+      } else {
+        editButton.style.display = "none"; // إخفاء زر التعديل إذا لم يكن المستخدم مشرفًا
+      }
+    }
+
+    // دالة لتعديل المقال
+    function editContent() {
+      const contentDiv = document.getElementById("content");
+      contentDiv.innerHTML = `
+        <textarea id="content-edit" rows="6" style="width: 100%;">${contentDiv.innerText}</textarea>
+        <button onclick="saveContent()">حفظ التعديلات</button>
+      `;
+    }
+
+    // دالة لحفظ التعديلات
+    function saveContent() {
+      const editedContent = document.getElementById("content-edit").value;
+      const contentDiv = document.getElementById("content");
+      contentDiv.innerHTML = editedContent;
+
+      // يمكنك هنا إضافة الكود لحفظ التعديلات في Firebase إذا كنت بحاجة إلى تخزين التعديلات
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f0f0f0;
+      padding: 50px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #4a148c;
+    }
+
+    .content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-top: 30px;
+    }
+
+    .button {
+      background-color: #4a148c;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .button:hover {
+      background-color: #6a1b9a;
+    }
+
+    .edit-btn {
+      display: none;
+      background-color: #6200ea;
+      color: white;
+      font-size: 16px;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .edit-btn:hover {
+      background-color: #7c4dff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>لماذا يجب علي الدفع؟</h1>
+
+  <div class="content" id="content">
+    <p>العائلة هي أساس المجتمع وهي الحاضنة الأولى للإنسان، حيث يتعلم فيها القيم والمبادئ الأساسية التي تحدد شخصيته وتوجهاته في الحياة.</p>
+    <p>تعتبر العائلة الملجأ الأول في الأوقات الصعبة، فهي توفر الدعم العاطفي والنفسي الذي يحتاجه الفرد، مما يساهم في تعزيز استقراره الاجتماعي والنفسي.</p>
+    <p>يجب على كل فرد أن يقدر قيمة العائلة ويسعى للحفاظ على روابطها وتقويتها، لأن ذلك ينعكس إيجابًا على الفرد والمجتمع بأسره.</p>
+  </div>
+
+  <!-- زر التعديل (يظهر فقط للمشرفين) -->
+  <button id="edit-btn" class="edit-btn" onclick="editContent()">تعديل المقال</button>
+
+</body>
+</html>
