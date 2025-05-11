@@ -71,7 +71,7 @@
     }
     .edit-btn {
       left: 60px;
-      background-color: red;
+      background-color: blue;
       color: white;
     }
     .message img {
@@ -115,21 +115,21 @@
   const db = firebase.firestore();
   const storage = firebase.storage();
 
-  const COLLECTION_NAME = "talents-comments"; // اسم المجموعة المحددة
+  const COLLECTION_NAME = "talents-comments"; // تغيير اسم المجموعة هنا
 
   let currentUser = null;
   let isAdmin = false;
 
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
-      window.location.href = "index.html";
+      window.location.href = "index.html"; // إعادة التوجيه إذا لم يكن المستخدم مسجلًا
       return;
     }
 
     currentUser = user;
     const userDoc = await db.collection("users").doc(user.uid).get();
     const userData = userDoc.data();
-    isAdmin = userData?.role === "admin";
+    isAdmin = userData?.role === "admin"; // التحقق إذا كان المستخدم مشرفًا
     listenToComments();
   });
 
