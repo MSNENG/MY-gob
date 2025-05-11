@@ -102,16 +102,13 @@
         window.location.href = "questions.html";
       });
 
-      document.getElementById("btn-7").addEventListener("click", () => {
-        window.location.href = "asked-questions.html"; // رابط للصفحة الجديدة
-      });
-
       document.getElementById("btn-8").addEventListener("click", () => {
         window.location.href = "AD.html";
       });
 
-      document.getElementById("btn-9").addEventListener("click", () => {
-        window.location.href = "seven.html";
+      // تعديل الزر الأخير ليكون "الأسئلة الشائعة؟" ويقود إلى صفحة asked-questions
+      document.getElementById("btn-asked-questions").addEventListener("click", () => {
+        window.location.href = "asked-questions.html";
       });
     };
   </script>
@@ -179,6 +176,18 @@
       background-color: #3700b3;
       transform: translateY(-2px);
     }
+
+    .clickable-text {
+      font-size: 18px;
+      color: #6200ea;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color 0.3s;
+    }
+
+    .clickable-text:hover {
+      color: #3700b3;
+    }
   </style>
 </head>
 <body>
@@ -196,10 +205,8 @@
     <button id="btn-4" class="number-btn">مقالات أهل الضاحية</button>
     <button id="btn-5" class="number-btn">مواهب</button>
     <button id="btn-6" class="number-btn">إستفسارات</button>
-    <!-- تحويل زر 7 إلى رابط -->
-    <a id="btn-7" href="asked-questions.html" class="number-btn" style="text-decoration: none; color: white;">أسئلة مطروحة</a>
     <button id="btn-8" class="number-btn">إعلانات</button>
-    <button id="btn-9" class="number-btn">7</button>
+    <span id="btn-asked-questions" class="clickable-text">الأسئلة الشائعة؟</span>
   </div>
 
 </body>
