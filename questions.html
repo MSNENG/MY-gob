@@ -34,39 +34,37 @@
       }
 
       currentUser = user;
-      let userNameSpan = document.getElementById("user-name"); // تعريف المتغير بشكل صحيح
       const userRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(userRef);
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        userNameSpan.textContent = data.name || "مستخدم";
         isAdmin = data.role === "admin";
       }
 
-      loadQuestions();
+      loadComments();
     });
 
-    // تحميل الأسئلة
-    async function loadQuestions() {
-      const container = document.getElementById('questions-container');
+    // تحميل التعليقات
+    async function loadComments() {
+      const container = document.getElementById('comments-container');
       container.innerHTML = "";
 
-      const qSnapshot = await getDocs(query(collection(db, "question-comments"), orderBy("timestamp", "desc")));
+      const qSnapshot = await getDocs(query(collection(db, "comments"), orderBy("timestamp", "desc")));
 
       for (const docSnap of qSnapshot.docs) {
         const data = docSnap.data();
         const commentId = docSnap.id;
 
-        const questionDiv = document.createElement("div");
-        questionDiv.classList.add("comment");
+        const commentDiv = document.createElement("div");
+        commentDiv.classList.add("comment");
 
         const time = new Date(data.timestamp?.seconds * 1000).toLocaleString();
         const contentP = document.createElement("p");
         contentP.textContent = data.text;
 
-        questionDiv.innerHTML = `<strong>سؤال بتاريخ: ${time}</strong>`;
-        questionDiv.appendChild(contentP);
+        commentDiv.innerHTML = `<strong>سؤال بتاريخ: ${time}</strong>`;
+        commentDiv.appendChild(contentP);
 
         // أزرار التعديل والحذف (للمشرف أو المالك فقط)
         if (isAdmin || data.userId === currentUser.uid) {
@@ -76,10 +74,10 @@
           editBtn.onclick = async () => {
             const newText = prompt("تعديل السؤال:", data.text);
             if (newText && newText.trim() !== "") {
-              await updateDoc(doc(db, "question-comments", commentId), {
+              await updateDoc(doc(db, "comments", commentId), {
                 text: newText.trim()
               });
-              loadQuestions();
+              loadComments();
             }
           };
 
@@ -88,13 +86,13 @@
           deleteBtn.classList.add("btn");
           deleteBtn.onclick = async () => {
             if (confirm("هل أنت متأكد من حذف السؤال؟")) {
-              await deleteDoc(doc(db, "question-comments", commentId));
-              loadQuestions();
+              await deleteDoc(doc(db, "comments", commentId));
+              loadComments();
             }
           };
 
-          questionDiv.appendChild(editBtn);
-          questionDiv.appendChild(deleteBtn);
+          commentDiv.appendChild(editBtn);
+          commentDiv.appendChild(deleteBtn);
         }
 
         // حقل الرد
@@ -107,20 +105,20 @@
         replyBtn.className = "btn";
         replyBtn.onclick = async () => {
           if (replyInput.value.trim() === "") return;
-          await addDoc(collection(db, `question-comments/${commentId}/replies`), {
+          await addDoc(collection(db, `comments/${commentId}/replies`), {
             text: replyInput.value,
             timestamp: serverTimestamp(),
             userId: currentUser.uid,
           });
           replyInput.value = "";
-          loadQuestions();
+          loadComments();
         };
 
-        questionDiv.appendChild(replyInput);
-        questionDiv.appendChild(replyBtn);
+        commentDiv.appendChild(replyInput);
+        commentDiv.appendChild(replyBtn);
 
         // التعقيبات
-        const repliesSnapshot = await getDocs(query(collection(db, `question-comments/${commentId}/replies`), orderBy("timestamp", "asc")));
+        const repliesSnapshot = await getDocs(query(collection(db, `comments/${commentId}/replies`), orderBy("timestamp", "asc")));
         for (const replyDoc of repliesSnapshot.docs) {
           const replyData = replyDoc.data();
           const replyId = replyDoc.id;
@@ -138,10 +136,10 @@
             editReplyBtn.onclick = async () => {
               const newText = prompt("تعديل التعقيب:", replyData.text);
               if (newText && newText.trim() !== "") {
-                await updateDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`), {
+                await updateDoc(doc(db, `comments/${commentId}/replies/${replyId}`), {
                   text: newText.trim()
                 });
-                loadQuestions();
+                loadComments();
               }
             };
 
@@ -150,8 +148,8 @@
             deleteReplyBtn.classList.add("btn");
             deleteReplyBtn.onclick = async () => {
               if (confirm("هل أنت متأكد من حذف التعقيب؟")) {
-                await deleteDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`));
-                loadQuestions();
+                await deleteDoc(doc(db, `comments/${commentId}/replies/${replyId}`));
+                loadComments();
               }
             };
 
@@ -159,11 +157,31 @@
             replyBox.appendChild(deleteReplyBtn);
           }
 
-          questionDiv.appendChild(replyBox);
+          commentDiv.appendChild(replyBox);
         }
 
-        container.appendChild(questionDiv);
+        container.appendChild(commentDiv);
       }
+    }
+
+    // إرسال تعليق جديد
+    async function sendComment() {
+      const input = document.getElementById("commentInput");
+      const text = input.value.trim();
+
+      if (!text) {
+        alert("يرجى كتابة تعليق");
+        return;
+      }
+
+      await addDoc(collection(db, "comments"), {
+        text,
+        userId: currentUser.uid,
+        timestamp: serverTimestamp()
+      });
+
+      input.value = "";
+      loadComments();
     }
   </script>
 
@@ -219,7 +237,12 @@
     <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
   </header>
 
-  <div id="questions-container"></div>
+  <h2>مقالات أو أسئلة مطروحة</h2>
+
+  <textarea id="commentInput" placeholder="أضف تعليقك هنا..." style="width: 100%; height: 100px; margin-top: 20px; font-size: 16px; border-radius: 8px;"></textarea>
+  <button class="btn" onclick="sendComment()">إرسال تعليق</button>
+
+  <div id="comments-container"></div>
 
 </body>
 </html>
