@@ -98,9 +98,11 @@
         // حقل الرد
         const replyInput = document.createElement("input");
         replyInput.placeholder = "أضف تعقيبًا...";
+        replyInput.className = "reply-input";
 
         const replyBtn = document.createElement("button");
         replyBtn.textContent = "إرسال تعقيب";
+        replyBtn.className = "reply-btn";
         replyBtn.onclick = async () => {
           if (replyInput.value.trim() === "") return;
           await addDoc(collection(db, `question-comments/${commentId}/replies`), {
@@ -122,10 +124,7 @@
           const replyTime = new Date(replyData.timestamp?.seconds * 1000).toLocaleString();
           const replyP = document.createElement("p");
           replyP.innerHTML = `<small>تعقيب بتاريخ ${replyTime}:</small> ${replyData.text}`;
-          replyP.style.marginRight = "20px";
-          replyP.style.backgroundColor = "#eee";
-          replyP.style.padding = "5px";
-          replyP.style.borderRadius = "8px";
+          replyP.className = "reply-box";
           questionDiv.appendChild(replyP);
         });
 
@@ -138,34 +137,36 @@
     body {
       font-family: 'Cairo', sans-serif;
       padding: 20px;
-      background-color: #f4f4f4;
+      background-color: #f0f0f0;
       direction: rtl;
       text-align: center;
     }
 
     header {
-      background-color: #2196f3;
+      background-color: #6200ea;
       color: white;
       padding: 15px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-radius: 10px;
+      margin-bottom: 20px;
     }
 
     .comment {
       background: white;
       margin: 20px auto;
-      padding: 15px;
+      padding: 20px;
       max-width: 600px;
       border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: right;
     }
 
     textarea, input {
-      width: 80%;
+      width: 100%;
       padding: 10px;
+      font-size: 16px;
       margin: 10px 0;
       border-radius: 8px;
       border: 1px solid #ccc;
@@ -174,14 +175,31 @@
     button {
       padding: 10px 20px;
       border: none;
-      background-color: #2196f3;
+      background-color: #6200ea;
       color: white;
+      font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
     }
 
     button:hover {
-      background-color: #1976d2;
+      background-color: #4b00b5;
+    }
+
+    .reply-box {
+      margin-top: 10px;
+      background-color: #f9f9f9;
+      padding: 8px;
+      border-radius: 8px;
+      border-right: 4px solid #6200ea;
+    }
+
+    .reply-input {
+      margin-top: 10px;
+    }
+
+    .reply-btn {
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -194,8 +212,8 @@
 
   <h2>صفحة الأسئلة</h2>
 
-  <div>
-    <textarea id="question-text" placeholder="اكتب سؤالك هنا..."></textarea><br/>
+  <div class="comment">
+    <textarea id="question-text" placeholder="اكتب سؤالك هنا..."></textarea>
     <button id="submit-question">إرسال السؤال</button>
   </div>
 
