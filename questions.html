@@ -172,11 +172,26 @@
         console.error("خطأ أثناء تسجيل الخروج:", error);
       });
     }
+
+    // إضافة تعليق جديد
+    async function addComment() {
+      const newCommentInput = document.getElementById("new-comment-input");
+      const newText = newCommentInput.value.trim();
+      if (newText) {
+        await addDoc(collection(db, "question-comments"), {
+          text: newText,
+          timestamp: serverTimestamp(),
+          userId: currentUser.uid,
+        });
+        newCommentInput.value = ""; // مسح الحقل بعد الإرسال
+        loadQuestions(); // إعادة تحميل الأسئلة
+      }
+    }
   </script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Arial', sans-serif;
       background-color: #f9f9f9;
       color: #333;
       margin: 0;
@@ -184,7 +199,7 @@
     }
 
     header {
-      background-color: #007bff;
+      background-color: #6a1b9a;
       color: white;
       padding: 10px 20px;
       text-align: right;
@@ -224,7 +239,7 @@
 
     .comment strong {
       font-size: 16px;
-      color: #007bff;
+      color: #6a1b9a;
     }
 
     .reply-box {
@@ -234,7 +249,7 @@
       border-radius: 5px;
     }
 
-    .reply-input, .reply-btn {
+    .reply-input, .reply-btn, #new-comment-input, #add-comment-btn {
       padding: 10px;
       margin-top: 10px;
       width: 100%;
@@ -254,8 +269,8 @@
       background-color: #218838;
     }
 
-    button {
-      background-color: #007bff;
+    .comment button {
+      background-color: #6a1b9a;
       color: white;
       border: none;
       padding: 5px 10px;
@@ -264,8 +279,31 @@
       margin: 5px;
     }
 
-    button:hover {
-      background-color: #0056b3;
+    .comment button:hover {
+      background-color: #4a148c;
+    }
+
+    /* حقل إضافة تعليق جديد */
+    #new-comment-container {
+      background-color: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 5px;
+    }
+
+    #add-comment-btn {
+      background-color: #6a1b9a;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 10px 15px;
+      border-radius: 5px;
+      width: 100%;
+    }
+
+    #add-comment-btn:hover {
+      background-color: #4a148c;
     }
   </style>
 </head>
@@ -273,10 +311,15 @@
 <body>
 
   <header>
-    <span></span>
     <span id="user-name"></span>
     <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
   </header>
+
+  <!-- حقل إضافة تعليق جديد -->
+  <div id="new-comment-container">
+    <input type="text" id="new-comment-input" placeholder="أضف تعليقًا جديدًا..." />
+    <button id="add-comment-btn" onclick="addComment()">إضافة تعليق</button>
+  </div>
 
   <div id="questions-container"></div>
 
