@@ -8,7 +8,7 @@
   <!-- استدعاء مكتبات Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -34,7 +34,7 @@
       }
 
       currentUser = user;
-      let userNameSpan = document.getElementById("user-name"); // تعريف المتغير بشكل صحيح
+      let userNameSpan = document.getElementById("user-name");
       const userRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(userRef);
 
@@ -163,12 +163,117 @@
         container.appendChild(questionDiv);
       }
     }
+
+    // وظيفة تسجيل الخروج
+    function logout() {
+      signOut(auth).then(() => {
+        window.location.href = "index.html"; // العودة إلى الصفحة الرئيسية
+      }).catch((error) => {
+        console.error("خطأ أثناء تسجيل الخروج:", error);
+      });
+    }
   </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      text-align: right;
+    }
+
+    header span {
+      margin-left: 10px;
+      font-size: 20px;
+    }
+
+    .logout-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 14px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .logout-btn:hover {
+      background-color: #e53935;
+    }
+
+    #questions-container {
+      padding: 20px;
+    }
+
+    .comment {
+      background-color: #fff;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .comment strong {
+      font-size: 16px;
+      color: #007bff;
+    }
+
+    .reply-box {
+      background-color: #f1f1f1;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+
+    .reply-input, .reply-btn {
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .reply-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .reply-btn:hover {
+      background-color: #218838;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 5px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
+
 <body>
 
   <header>
-    <span>مرحبا بك في صفحة الأسئلة الشائعة</span>
+    <span></span>
     <span id="user-name"></span>
     <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
   </header>
