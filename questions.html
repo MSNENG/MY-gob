@@ -8,7 +8,7 @@
   <!-- استدعاء مكتبات Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -34,7 +34,7 @@
       }
 
       currentUser = user;
-      let userNameSpan = document.getElementById("user-name");
+      let userNameSpan = document.getElementById("user-name"); // تعريف المتغير بشكل صحيح
       const userRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(userRef);
 
@@ -72,6 +72,7 @@
         if (isAdmin || data.userId === currentUser.uid) {
           const editBtn = document.createElement("button");
           editBtn.textContent = "تعديل";
+          editBtn.classList.add("btn");
           editBtn.onclick = async () => {
             const newText = prompt("تعديل السؤال:", data.text);
             if (newText && newText.trim() !== "") {
@@ -84,7 +85,7 @@
 
           const deleteBtn = document.createElement("button");
           deleteBtn.textContent = "حذف";
-          deleteBtn.style.marginRight = "10px";
+          deleteBtn.classList.add("btn");
           deleteBtn.onclick = async () => {
             if (confirm("هل أنت متأكد من حذف السؤال؟")) {
               await deleteDoc(doc(db, "question-comments", commentId));
@@ -103,7 +104,7 @@
 
         const replyBtn = document.createElement("button");
         replyBtn.textContent = "إرسال تعقيب";
-        replyBtn.className = "reply-btn";
+        replyBtn.className = "btn";
         replyBtn.onclick = async () => {
           if (replyInput.value.trim() === "") return;
           await addDoc(collection(db, `question-comments/${commentId}/replies`), {
@@ -133,6 +134,7 @@
           if (isAdmin || replyData.userId === currentUser.uid) {
             const editReplyBtn = document.createElement("button");
             editReplyBtn.textContent = "تعديل";
+            editReplyBtn.classList.add("btn");
             editReplyBtn.onclick = async () => {
               const newText = prompt("تعديل التعقيب:", replyData.text);
               if (newText && newText.trim() !== "") {
@@ -145,7 +147,7 @@
 
             const deleteReplyBtn = document.createElement("button");
             deleteReplyBtn.textContent = "حذف";
-            deleteReplyBtn.style.marginRight = "10px";
+            deleteReplyBtn.classList.add("btn");
             deleteReplyBtn.onclick = async () => {
               if (confirm("هل أنت متأكد من حذف التعقيب؟")) {
                 await deleteDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`));
@@ -163,163 +165,59 @@
         container.appendChild(questionDiv);
       }
     }
-
-    // وظيفة تسجيل الخروج
-    function logout() {
-      signOut(auth).then(() => {
-        window.location.href = "index.html"; // العودة إلى الصفحة الرئيسية
-      }).catch((error) => {
-        console.error("خطأ أثناء تسجيل الخروج:", error);
-      });
-    }
-
-    // إضافة تعليق جديد
-    async function addComment() {
-      const newCommentInput = document.getElementById("new-comment-input");
-      const newText = newCommentInput.value.trim();
-      if (newText) {
-        await addDoc(collection(db, "question-comments"), {
-          text: newText,
-          timestamp: serverTimestamp(),
-          userId: currentUser.uid,
-        });
-        newCommentInput.value = ""; // مسح الحقل بعد الإرسال
-        loadQuestions(); // إعادة تحميل الأسئلة
-      }
-    }
   </script>
 
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #f9f9f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background-color: #6a1b9a;
-      color: white;
-      padding: 10px 20px;
-      text-align: right;
-    }
-
-    header span {
-      margin-left: 10px;
-      font-size: 20px;
-    }
-
-    .logout-btn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      cursor: pointer;
-      font-size: 14px;
-      border-radius: 5px;
-      transition: background-color 0.3s;
-    }
-
-    .logout-btn:hover {
-      background-color: #e53935;
-    }
-
-    #questions-container {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f0f0f0;
+      text-align: center;
       padding: 20px;
     }
-
     .comment {
       background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
       margin-bottom: 20px;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
-
-    .comment strong {
+    .btn {
+      padding: 10px 20px;
+      background-color: #6200ea;
+      color: white;
       font-size: 16px;
-      color: #6a1b9a;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
     }
-
+    .btn:hover {
+      background-color: #3700b3;
+    }
+    .reply-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
     .reply-box {
-      background-color: #f1f1f1;
+      background-color: #f9f9f9;
       padding: 10px;
+      border-radius: 8px;
       margin-top: 10px;
-      border-radius: 5px;
-    }
-
-    .reply-input, .reply-btn, #new-comment-input, #add-comment-btn {
-      padding: 10px;
-      margin-top: 10px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .reply-btn {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: background-color 0.3s;
-    }
-
-    .reply-btn:hover {
-      background-color: #218838;
-    }
-
-    .comment button {
-      background-color: #6a1b9a;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-      border-radius: 5px;
-      margin: 5px;
-    }
-
-    .comment button:hover {
-      background-color: #4a148c;
-    }
-
-    /* حقل إضافة تعليق جديد */
-    #new-comment-container {
-      background-color: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      border-radius: 5px;
-    }
-
-    #add-comment-btn {
-      background-color: #6a1b9a;
-      color: white;
-      border: none;
-      cursor: pointer;
-      padding: 10px 15px;
-      border-radius: 5px;
-      width: 100%;
-    }
-
-    #add-comment-btn:hover {
-      background-color: #4a148c;
     }
   </style>
-</head>
 
+</head>
 <body>
 
   <header>
+    <span></span>
     <span id="user-name"></span>
     <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
   </header>
-
-  <!-- حقل إضافة تعليق جديد -->
-  <div id="new-comment-container">
-    <input type="text" id="new-comment-input" placeholder="أضف تعليقًا جديدًا..." />
-    <button id="add-comment-btn" onclick="addComment()">إضافة تعليق</button>
-  </div>
 
   <div id="questions-container"></div>
 
