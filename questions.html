@@ -1,144 +1,179 @@
-<script type="module">
-  // ... جميع الاستدعاءات و firebaseConfig كما هي
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>أسئلة مطروحة</title>
 
-  let currentUser = null;
-  let isAdmin = false;
+  <!-- استدعاء مكتبات Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+    };
 
-    currentUser = user;
-    userNameSpan = document.getElementById("user-name");
-    const userRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(userRef);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      userNameSpan.textContent = data.name || "مستخدم";
-      isAdmin = data.role === "admin";
-    }
+    let currentUser = null;
+    let isAdmin = false;
 
-    loadQuestions();
-  });
-
-  // ... submitQuestion كما هي
-
-  async function loadQuestions() {
-    const container = document.getElementById('questions-container');
-    container.innerHTML = "";
-
-    const qSnapshot = await getDocs(query(collection(db, "question-comments"), orderBy("timestamp", "desc")));
-
-    for (const docSnap of qSnapshot.docs) {
-      const data = docSnap.data();
-      const commentId = docSnap.id;
-
-      const questionDiv = document.createElement("div");
-      questionDiv.classList.add("comment");
-
-      const time = new Date(data.timestamp?.seconds * 1000).toLocaleString();
-      const contentP = document.createElement("p");
-      contentP.textContent = data.text;
-
-      questionDiv.innerHTML = `<strong>سؤال بتاريخ: ${time}</strong>`;
-      questionDiv.appendChild(contentP);
-
-      // أزرار التعديل والحذف (للمشرف أو المالك فقط)
-      if (isAdmin || data.userId === currentUser.uid) {
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "تعديل";
-        editBtn.onclick = async () => {
-          const newText = prompt("تعديل السؤال:", data.text);
-          if (newText && newText.trim() !== "") {
-            await updateDoc(doc(db, "question-comments", commentId), {
-              text: newText.trim()
-            });
-            loadQuestions();
-          }
-        };
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "حذف";
-        deleteBtn.style.marginRight = "10px";
-        deleteBtn.onclick = async () => {
-          if (confirm("هل أنت متأكد من حذف السؤال؟")) {
-            await deleteDoc(doc(db, "question-comments", commentId));
-            loadQuestions();
-          }
-        };
-
-        questionDiv.appendChild(editBtn);
-        questionDiv.appendChild(deleteBtn);
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
       }
 
-      // حقل الرد
-      const replyInput = document.createElement("input");
-      replyInput.placeholder = "أضف تعقيبًا...";
-      replyInput.className = "reply-input";
+      currentUser = user;
+      let userNameSpan = document.getElementById("user-name"); // تعريف المتغير بشكل صحيح
+      const userRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(userRef);
 
-      const replyBtn = document.createElement("button");
-      replyBtn.textContent = "إرسال تعقيب";
-      replyBtn.className = "reply-btn";
-      replyBtn.onclick = async () => {
-        if (replyInput.value.trim() === "") return;
-        await addDoc(collection(db, `question-comments/${commentId}/replies`), {
-          text: replyInput.value,
-          timestamp: serverTimestamp(),
-          userId: currentUser.uid,
-        });
-        replyInput.value = "";
-        loadQuestions();
-      };
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        userNameSpan.textContent = data.name || "مستخدم";
+        isAdmin = data.role === "admin";
+      }
 
-      questionDiv.appendChild(replyInput);
-      questionDiv.appendChild(replyBtn);
+      loadQuestions();
+    });
 
-      // التعقيبات
-      const repliesSnapshot = await getDocs(query(collection(db, `question-comments/${commentId}/replies`), orderBy("timestamp", "asc")));
-      for (const replyDoc of repliesSnapshot.docs) {
-        const replyData = replyDoc.data();
-        const replyId = replyDoc.id;
-        const replyTime = new Date(replyData.timestamp?.seconds * 1000).toLocaleString();
+    // تحميل الأسئلة
+    async function loadQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = "";
 
-        const replyBox = document.createElement("div");
-        replyBox.className = "reply-box";
-        replyBox.innerHTML = `<small>تعقيب بتاريخ ${replyTime}:</small> ${replyData.text}`;
+      const qSnapshot = await getDocs(query(collection(db, "question-comments"), orderBy("timestamp", "desc")));
 
-        // أزرار التعديل والحذف للتعقيبات
-        if (isAdmin || replyData.userId === currentUser.uid) {
-          const editReplyBtn = document.createElement("button");
-          editReplyBtn.textContent = "تعديل";
-          editReplyBtn.onclick = async () => {
-            const newText = prompt("تعديل التعقيب:", replyData.text);
+      for (const docSnap of qSnapshot.docs) {
+        const data = docSnap.data();
+        const commentId = docSnap.id;
+
+        const questionDiv = document.createElement("div");
+        questionDiv.classList.add("comment");
+
+        const time = new Date(data.timestamp?.seconds * 1000).toLocaleString();
+        const contentP = document.createElement("p");
+        contentP.textContent = data.text;
+
+        questionDiv.innerHTML = `<strong>سؤال بتاريخ: ${time}</strong>`;
+        questionDiv.appendChild(contentP);
+
+        // أزرار التعديل والحذف (للمشرف أو المالك فقط)
+        if (isAdmin || data.userId === currentUser.uid) {
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "تعديل";
+          editBtn.onclick = async () => {
+            const newText = prompt("تعديل السؤال:", data.text);
             if (newText && newText.trim() !== "") {
-              await updateDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`), {
+              await updateDoc(doc(db, "question-comments", commentId), {
                 text: newText.trim()
               });
               loadQuestions();
             }
           };
 
-          const deleteReplyBtn = document.createElement("button");
-          deleteReplyBtn.textContent = "حذف";
-          deleteReplyBtn.style.marginRight = "10px";
-          deleteReplyBtn.onclick = async () => {
-            if (confirm("هل أنت متأكد من حذف التعقيب؟")) {
-              await deleteDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`));
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "حذف";
+          deleteBtn.style.marginRight = "10px";
+          deleteBtn.onclick = async () => {
+            if (confirm("هل أنت متأكد من حذف السؤال؟")) {
+              await deleteDoc(doc(db, "question-comments", commentId));
               loadQuestions();
             }
           };
 
-          replyBox.appendChild(editReplyBtn);
-          replyBox.appendChild(deleteReplyBtn);
+          questionDiv.appendChild(editBtn);
+          questionDiv.appendChild(deleteBtn);
         }
 
-        questionDiv.appendChild(replyBox);
-      }
+        // حقل الرد
+        const replyInput = document.createElement("input");
+        replyInput.placeholder = "أضف تعقيبًا...";
+        replyInput.className = "reply-input";
 
-      container.appendChild(questionDiv);
+        const replyBtn = document.createElement("button");
+        replyBtn.textContent = "إرسال تعقيب";
+        replyBtn.className = "reply-btn";
+        replyBtn.onclick = async () => {
+          if (replyInput.value.trim() === "") return;
+          await addDoc(collection(db, `question-comments/${commentId}/replies`), {
+            text: replyInput.value,
+            timestamp: serverTimestamp(),
+            userId: currentUser.uid,
+          });
+          replyInput.value = "";
+          loadQuestions();
+        };
+
+        questionDiv.appendChild(replyInput);
+        questionDiv.appendChild(replyBtn);
+
+        // التعقيبات
+        const repliesSnapshot = await getDocs(query(collection(db, `question-comments/${commentId}/replies`), orderBy("timestamp", "asc")));
+        for (const replyDoc of repliesSnapshot.docs) {
+          const replyData = replyDoc.data();
+          const replyId = replyDoc.id;
+          const replyTime = new Date(replyData.timestamp?.seconds * 1000).toLocaleString();
+
+          const replyBox = document.createElement("div");
+          replyBox.className = "reply-box";
+          replyBox.innerHTML = `<small>تعقيب بتاريخ ${replyTime}:</small> ${replyData.text}`;
+
+          // أزرار التعديل والحذف للتعقيبات
+          if (isAdmin || replyData.userId === currentUser.uid) {
+            const editReplyBtn = document.createElement("button");
+            editReplyBtn.textContent = "تعديل";
+            editReplyBtn.onclick = async () => {
+              const newText = prompt("تعديل التعقيب:", replyData.text);
+              if (newText && newText.trim() !== "") {
+                await updateDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`), {
+                  text: newText.trim()
+                });
+                loadQuestions();
+              }
+            };
+
+            const deleteReplyBtn = document.createElement("button");
+            deleteReplyBtn.textContent = "حذف";
+            deleteReplyBtn.style.marginRight = "10px";
+            deleteReplyBtn.onclick = async () => {
+              if (confirm("هل أنت متأكد من حذف التعقيب؟")) {
+                await deleteDoc(doc(db, `question-comments/${commentId}/replies/${replyId}`));
+                loadQuestions();
+              }
+            };
+
+            replyBox.appendChild(editReplyBtn);
+            replyBox.appendChild(deleteReplyBtn);
+          }
+
+          questionDiv.appendChild(replyBox);
+        }
+
+        container.appendChild(questionDiv);
+      }
     }
-  }
-</script>
+  </script>
+</head>
+<body>
+
+  <header>
+    <span>مرحبا بك في صفحة الأسئلة الشائعة</span>
+    <span id="user-name"></span>
+    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+  </header>
+
+  <div id="questions-container"></div>
+
+</body>
+</html>
