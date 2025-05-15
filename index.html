@@ -126,6 +126,11 @@
           alert("فشل إنشاء الحساب: " + error.message);
         }
       };
+
+      // إضافة حدث الضغط على جملة تنزيل التطبيق
+      document.getElementById("download-app-link").onclick = () => {
+        window.open("https://raw.githubusercontent.com/MSNENG/MY-gob/main/app-release.apk", "_blank");
+      };
     };
   </script>
 
@@ -215,6 +220,22 @@
         margin: 0;
       }
     }
+
+    /* تصميم جملة تنزيل التطبيق أسفل الصفحة */
+    #download-app-link {
+      display: block;
+      margin: 30px auto 10px auto;
+      font-size: 18px;
+      color: #4a148c;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      width: fit-content;
+    }
+
+    #download-app-link:hover {
+      text-decoration: underline;
+    }
   </style>
 
   <!-- إضافة PWA -->
@@ -259,6 +280,9 @@
     <button class="button" id="register-btn">إنشاء الحساب</button>
     <div class="toggle-link" id="toggle-to-login">لديك حساب؟ تسجيل الدخول</div>
   </div>
+
+  <!-- جملة تنزيل التطبيق -->
+  <div id="download-app-link" title="تحميل التطبيق">لتنزيل التطبيق</div>
 
   <script>
     // إظهار النموذج بعد اختفاء الشعار
