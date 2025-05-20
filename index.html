@@ -9,7 +9,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -109,6 +109,15 @@
         }
 
         try {
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("name", "==", name));
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            alert("الاسم مستخدم مسبقاً. يرجى اختيار اسم آخر.");
+            return;
+          }
+
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
 
@@ -128,6 +137,10 @@
 
       document.getElementById("download-app-link").onclick = () => {
         window.open("https://raw.githubusercontent.com/MSNENG/MY-gob/main/app-release.apk", "_blank");
+      };
+
+      document.getElementById("usage-link").onclick = () => {
+        window.location.href = "instructions.html";
       };
 
       setTimeout(() => {
@@ -206,6 +219,7 @@
       }
     }
 
+    /* الروابط الإضافية */
     #extra-links {
       display: none;
       margin-top: 20px;
@@ -233,14 +247,6 @@
       margin-top: 40px;
       color: #000;
       font-weight: normal;
-    }
-
-    a.link-row {
-      text-decoration: none;
-    }
-
-    a.link-row:hover span {
-      text-decoration: underline;
     }
   </style>
 
@@ -292,10 +298,10 @@
       <span>تنزيل التطبيق مباشرة على أجهزة أندرويد</span>
     </div>
 
-    <a href="instructions.html" class="link-row" title="تعليمات الاستخدام" id="usage-link">
+    <div id="usage-link" class="link-row" title="تعليمات الاستخدام">
       <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" />
-      <span>تعليمات الاستخدام</span>
-    </a>
+      <span>تنزيل التطبيق على أجهزة ابل</span>
+    </div>
 
     <div class="footer-note">Development By Dahi</div>
   </div>
