@@ -127,7 +127,7 @@
         }
       };
 
-      // إضافة حدث الضغط على جملة تنزيل التطبيق
+      // حدث الضغط على رابط تنزيل التطبيق
       document.getElementById("download-app-link").onclick = () => {
         window.open("https://raw.githubusercontent.com/MSNENG/MY-gob/main/app-release.apk", "_blank");
       };
@@ -223,7 +223,7 @@
 
     /* تصميم جملة تنزيل التطبيق أسفل الصفحة */
     #download-app-link {
-      display: block;
+      display: none; /* ← تم الإخفاء الافتراضي هنا */
       margin: 30px auto 10px auto;
       font-size: 18px;
       color: #4a148c;
@@ -281,13 +281,14 @@
     <div class="toggle-link" id="toggle-to-login">لديك حساب؟ تسجيل الدخول</div>
   </div>
 
-  <!-- جملة تنزيل التطبيق -->
+  <!-- جملة تنزيل التطبيق (مخفاة مبدئياً) -->
   <div id="download-app-link" title="تحميل التطبيق">لتنزيل التطبيق</div>
 
   <script>
     // إظهار النموذج بعد اختفاء الشعار
     setTimeout(() => {
       document.getElementById("login-section").style.display = "block";
+      document.getElementById("download-app-link").style.display = "block"; // ← إظهار الجملة الآن
     }, 2500);
   </script>
 
