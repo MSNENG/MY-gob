@@ -127,9 +127,13 @@
         }
       };
 
-      // حدث الضغط على رابط تنزيل التطبيق
+      // روابط أسفل الصفحة
       document.getElementById("download-app-link").onclick = () => {
         window.open("https://raw.githubusercontent.com/MSNENG/MY-gob/main/app-release.apk", "_blank");
+      };
+
+      document.getElementById("instructions-link").onclick = () => {
+        window.location.href = "instructions.html";
       };
     };
   </script>
@@ -221,19 +225,21 @@
       }
     }
 
-    /* تصميم جملة تنزيل التطبيق أسفل الصفحة */
-    #download-app-link {
-      display: none; /* ← تم الإخفاء الافتراضي هنا */
-      margin: 30px auto 10px auto;
-      font-size: 18px;
+    /* الروابط أسفل الصفحة */
+    #extra-links {
+      display: none;
+      margin-top: 20px;
+    }
+
+    #extra-links div {
       color: #4a148c;
       font-weight: bold;
       cursor: pointer;
       user-select: none;
-      width: fit-content;
+      margin-bottom: 10px;
     }
 
-    #download-app-link:hover {
+    #extra-links div:hover {
       text-decoration: underline;
     }
   </style>
@@ -253,7 +259,6 @@
       });
     }
   </script>
-
 </head>
 <body>
 
@@ -281,14 +286,16 @@
     <div class="toggle-link" id="toggle-to-login">لديك حساب؟ تسجيل الدخول</div>
   </div>
 
-  <!-- جملة تنزيل التطبيق (مخفاة مبدئياً) -->
-  <div id="download-app-link" title="تحميل التطبيق">لتنزيل التطبيق</div>
+  <!-- الروابط الإضافية -->
+  <div id="extra-links">
+    <div id="download-app-link" title="تحميل التطبيق">لتنزيل التطبيق</div>
+    <div id="instructions-link" title="تعليمات الاستخدام">تعليمات الاستخدام</div>
+  </div>
 
   <script>
-    // إظهار النموذج بعد اختفاء الشعار
     setTimeout(() => {
       document.getElementById("login-section").style.display = "block";
-      document.getElementById("download-app-link").style.display = "block"; // ← إظهار الجملة الآن
+      document.getElementById("extra-links").style.display = "block";
     }, 2500);
   </script>
 
