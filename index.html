@@ -130,10 +130,6 @@
         window.open("https://raw.githubusercontent.com/MSNENG/MY-gob/main/app-release.apk", "_blank");
       };
 
-      document.getElementById("usage-link").onclick = () => {
-        window.location.href = "usage.html";
-      };
-
       setTimeout(() => {
         loginSection.style.display = "block";
         extraLinks.style.display = "block";
@@ -210,7 +206,6 @@
       }
     }
 
-    /* الروابط الإضافية */
     #extra-links {
       display: none;
       margin-top: 20px;
@@ -238,6 +233,14 @@
       margin-top: 40px;
       color: #000;
       font-weight: normal;
+    }
+
+    a.link-row {
+      text-decoration: none;
+    }
+
+    a.link-row:hover span {
+      text-decoration: underline;
     }
   </style>
 
@@ -289,10 +292,10 @@
       <span>تنزيل التطبيق مباشرة على أجهزة أندرويد</span>
     </div>
 
-    <div id="usage-link" class="link-row" title="تحميل التطبيق على أجهزة ابل">
+    <a href="instructions.html" class="link-row" title="تعليمات الاستخدام" id="usage-link">
       <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg" alt="Apple" />
-      <span>تنزيل التطبيق على أجهزة ابل</span>
-    </div>
+      <span>تعليمات الاستخدام</span>
+    </a>
 
     <div class="footer-note">Development By Dahi</div>
   </div>
