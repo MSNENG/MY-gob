@@ -2,241 +2,224 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>تواصل</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
       background-color: #f0f0f0;
-      margin: 0;
       padding: 20px;
-      direction: rtl;
       text-align: center;
+      direction: rtl;
     }
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      margin-bottom: 30px;
-    }
-    h1 {
-      margin: 0;
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 25px 20px 30px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     textarea {
-      width: 90%;
-      max-width: 600px;
-      height: 150px;
-      padding: 10px;
+      width: 100%;
+      height: 160px; /* مكبر */
+      padding: 15px;
       font-size: 16px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: 1px solid #ccc;
+      margin-bottom: 15px;
       resize: vertical;
+      font-family: 'Cairo', sans-serif;
+    }
+    input[type="file"] {
+      margin-bottom: 15px;
+      cursor: pointer;
     }
     button {
-      margin-top: 15px;
-      padding: 12px 30px;
+      padding: 12px 25px;
       background-color: #6200ea;
       color: white;
+      font-size: 17px;
       border: none;
-      border-radius: 10px;
-      font-size: 18px;
+      border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.3s;
     }
     button:hover {
       background-color: #3700b3;
     }
-    .messages-container {
-      max-width: 700px;
-      margin: 30px auto 0 auto;
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-      text-align: right;
-      direction: rtl;
-      overflow-y: auto;
-      max-height: 400px;
-    }
     .message {
-      border-bottom: 1px solid #ddd;
-      padding: 10px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .message:last-child {
-      border-bottom: none;
-    }
-    .msg-text {
-      flex: 1;
       text-align: right;
-      white-space: pre-wrap;
+      background: #f9f9f9;
+      padding: 15px 15px 10px 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      border-right: 5px solid #6200ea;
+      position: relative;
       word-wrap: break-word;
     }
-    .msg-info {
-      font-size: 12px;
-      color: #555;
-      margin-left: 10px;
-      min-width: 140px;
-      text-align: left;
-    }
     .delete-btn {
-      background-color: #e53935;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      padding: 5px 10px;
+      position: absolute;
+      top: 8px;
+      left: 10px;
+      font-size: 13px;
+      border-radius: 5px;
       cursor: pointer;
+      padding: 6px 12px;
+      background-color: #e53935;
+      color: white;
+      border: none;
       transition: background-color 0.3s;
-      font-size: 14px;
-      margin-left: 10px;
     }
     .delete-btn:hover {
       background-color: #b71c1c;
     }
-    .hidden {
-      display: none;
+    .message img {
+      max-width: 100%;
+      margin-top: 12px;
+      border-radius: 8px;
     }
   </style>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    let currentUser = null;
-    let currentUserName = "";
-    let currentUserRole = "";
-
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-      currentUser = user;
-
-      // جلب بيانات المستخدم (الاسم والدور)
-      const userRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(userRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        currentUserName = data.name || "مستخدم";
-        currentUserRole = data.role || "user";
-        // تحميل الرسائل بعد تحديد الدور
-        loadMessages();
-      } else {
-        alert("لم يتم العثور على بيانات المستخدم.");
-        window.location.href = "index.html";
-      }
-    });
-
-    async function sendMessage() {
-      const textarea = document.getElementById("message-input");
-      const text = textarea.value.trim();
-      if (text === "") {
-        alert("الرجاء كتابة رسالة.");
-        return;
-      }
-      try {
-        await addDoc(collection(db, "contact-messages"), {
-          text: text,
-          timestamp: new Date(),
-          uid: currentUser.uid,
-          userName: currentUserName
-        });
-        textarea.value = "";
-        alert("تم إرسال الرسالة.");
-      } catch (error) {
-        alert("خطأ في الإرسال: " + error.message);
-      }
-    }
-
-    function loadMessages() {
-      const messagesContainer = document.getElementById("messages-list");
-      const q = query(collection(db, "contact-messages"), orderBy("timestamp", "desc"));
-
-      onSnapshot(q, snapshot => {
-        messagesContainer.innerHTML = "";
-
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const messageId = docSnap.id;
-
-          // إذا كان المشرف، يعرض كل الرسائل مع معلومات وحذف
-          if (currentUserRole === "admin") {
-            const messageDiv = document.createElement("div");
-            messageDiv.className = "message";
-
-            const infoDiv = document.createElement("div");
-            infoDiv.className = "msg-info";
-            const time = data.timestamp?.toDate?.() || new Date();
-            infoDiv.textContent = `${data.userName || "مستخدم"} — ${time.toLocaleString()}`;
-
-            const textDiv = document.createElement("div");
-            textDiv.className = "msg-text";
-            textDiv.textContent = data.text;
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.className = "delete-btn";
-            deleteBtn.textContent = "حذف";
-            deleteBtn.onclick = async () => {
-              if (confirm("هل أنت متأكد من حذف هذه الرسالة؟")) {
-                await deleteDoc(doc(db, "contact-messages", messageId));
-              }
-            };
-
-            messageDiv.appendChild(textDiv);
-            messageDiv.appendChild(infoDiv);
-            messageDiv.appendChild(deleteBtn);
-            messagesContainer.appendChild(messageDiv);
-
-          } else {
-            // للمستخدم العادي: يعرض فقط رسائله النصية فقط
-            if (data.uid === currentUser.uid) {
-              const messageDiv = document.createElement("div");
-              messageDiv.className = "message";
-
-              const textDiv = document.createElement("div");
-              textDiv.className = "msg-text";
-              textDiv.textContent = data.text;
-
-              messageDiv.appendChild(textDiv);
-              messagesContainer.appendChild(messageDiv);
-            }
-          }
-        });
-      });
-    }
-  </script>
 </head>
 <body>
-  <header>
-    <h1>تواصل</h1>
-  </header>
 
-  <textarea id="message-input" placeholder="اكتب رسالتك هنا..."></textarea><br/>
-  <button onclick="sendMessage()">إرسال</button>
+<div class="container">
+  <textarea id="commentInput" placeholder="اكتب رسالتك هنا..."></textarea>
+  <input type="file" id="imageInput" accept="image/*" />
+  <button onclick="sendComment()">إرسال</button>
 
-  <div id="messages-container" class="messages-container">
-    <h2>الرسائل الواردة:</h2>
-    <div id="messages-list"></div>
-  </div>
+  <div id="commentsList" style="margin-top: 40px;"></div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+    authDomain: "my-gob.firebaseapp.com",
+    projectId: "my-gob",
+    storageBucket: "my-gob.appspot.com",
+    messagingSenderId: "464127979375",
+    appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  const COLLECTION_NAME = "contact-messages"; // اسم المجموعة في فايرستور
+  let currentUser = null;
+  let isAdmin = false;
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+    currentUser = user;
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const userData = userDoc.data();
+    isAdmin = userData?.role === "admin";
+    listenToMessages();
+  });
+
+  async function sendComment() {
+    const input = document.getElementById("commentInput");
+    const text = input.value.trim();
+    const file = document.getElementById("imageInput").files[0];
+
+    if (!text && !file) {
+      alert("يرجى كتابة رسالة أو إرفاق صورة على الأقل");
+      return;
+    }
+
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || "مستخدم";
+
+    let imageUrl = "";
+
+    if (file) {
+      try {
+        const storageRef = storage.ref().child("contact_images/" + Date.now() + "_" + file.name);
+        const uploadTask = await storageRef.put(file);
+        imageUrl = await uploadTask.ref.getDownloadURL();
+      } catch (error) {
+        alert("حدث خطأ أثناء رفع الصورة.");
+        return;
+      }
+    }
+
+    await db.collection(COLLECTION_NAME).add({
+      text,
+      imageUrl,
+      userId: currentUser.uid,
+      userName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    input.value = "";
+    document.getElementById("imageInput").value = "";
+  }
+
+  function listenToMessages() {
+    const commentsList = document.getElementById("commentsList");
+
+    db.collection(COLLECTION_NAME)
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snapshot) => {
+        commentsList.innerHTML = "";
+
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          // عرض لكل الرسائل فقط للمشرف، أما للمستخدم فقط رسائله
+          if (!isAdmin && data.userId !== currentUser.uid) {
+            return;
+          }
+
+          const commentId = doc.id;
+          const commentDiv = document.createElement("div");
+          commentDiv.className = "message";
+          commentDiv.id = `comment-${commentId}`;
+
+          const date = data.timestamp?.toDate?.();
+          const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
+
+          commentDiv.innerHTML =
+            `<strong>${data.userName || "مستخدم"}</strong><br>` +
+            `${data.text || ""}<br>` +
+            `<small>${formattedDate}</small>`;
+
+          if (data.imageUrl) {
+            const img = document.createElement("img");
+            img.src = data.imageUrl;
+            commentDiv.appendChild(img);
+          }
+
+          if (isAdmin) {
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "delete-btn";
+            deleteButton.textContent = "حذف";
+            deleteButton.onclick = () => deleteMessage(commentId);
+            commentDiv.appendChild(deleteButton);
+          }
+
+          commentsList.appendChild(commentDiv);
+        });
+      });
+  }
+
+  async function deleteMessage(commentId) {
+    if (confirm("هل أنت متأكد من حذف هذه الرسالة؟")) {
+      await db.collection(COLLECTION_NAME).doc(commentId).delete();
+    }
+  }
+</script>
+
 </body>
 </html>
