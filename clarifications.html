@@ -1,140 +1,240 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>توضيحات</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Cairo', sans-serif;
       background-color: #f0f0f0;
       padding: 20px;
+      direction: rtl;
     }
-    h2 {
-      text-align: center;
-      color: #6200ea;
-    }
-    #comment-form, .reply-form {
-      margin-bottom: 20px;
-    }
-    textarea {
-      width: 100%;
-      height: 60px;
-      margin-bottom: 10px;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
+    header {
       background-color: #6200ea;
       color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
     }
     .comment-box, .reply-box {
       background: white;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .comment-header, .reply-header {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .comment-text, .reply-text {
+      margin: 10px 0;
+    }
+    .meta {
+      color: gray;
+      font-size: 0.9em;
+    }
+    .actions {
+      margin-top: 10px;
+    }
+    .actions button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #e0e0e0;
+      cursor: pointer;
+    }
+    .actions button:hover {
+      background-color: #ccc;
+    }
+    .input-area {
+      margin-bottom: 30px;
+    }
+    textarea {
+      width: 100%;
       padding: 10px;
       border-radius: 10px;
-      margin-bottom: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      border: 1px solid #ccc;
+      resize: vertical;
+      font-family: 'Cairo', sans-serif;
     }
-    .replies {
+    button.send {
+      background-color: #6200ea;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    button.send:hover {
+      background-color: #3700b3;
+    }
+    .reply-container {
       margin-right: 20px;
     }
   </style>
 </head>
 <body>
-  <h2>التوضيحات</h2>
+  <header>
+    <h2>قسم التوضيحات</h2>
+  </header>
 
-  <div id="comment-form">
-    <textarea id="comment-input" placeholder="اكتب تعليقك هنا..."></textarea>
-    <button onclick="addComment()">إرسال</button>
+  <div class="input-area">
+    <textarea id="new-comment" rows="4" placeholder="اكتب تعليقك هنا..."></textarea>
+    <button class="send" onclick="addComment()">إرسال</button>
   </div>
 
   <div id="comments-container"></div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc,
+      serverTimestamp, query, orderBy, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
       authDomain: "my-gob.firebaseapp.com",
       projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
 
-    auth.onAuthStateChanged(user => {
+    let currentUser;
+
+    onAuthStateChanged(auth, (user) => {
       if (user) {
-        loadComments(user);
+        currentUser = user;
+        loadComments();
       } else {
         window.location.href = "index.html";
       }
     });
 
-    function addComment() {
-      const text = document.getElementById("comment-input").value;
+    async function addComment() {
+      const text = document.getElementById("new-comment").value;
       if (!text.trim()) return;
 
-      const comment = {
+      await addDoc(collection(db, "clarifications-comments"), {
         text,
-        createdAt: new Date(),
-        userId: auth.currentUser.uid,
-        replies: []
-      };
+        uid: currentUser.uid,
+        name: currentUser.displayName || "مستخدم مجهول",
+        timestamp: serverTimestamp()
+      });
+      document.getElementById("new-comment").value = "";
+    }
 
-      db.collection("clarifications-comments").add(comment).then(() => {
-        document.getElementById("comment-input").value = "";
-        loadComments(auth.currentUser);
+    function loadComments() {
+      const q = query(collection(db, "clarifications-comments"), orderBy("timestamp", "desc"));
+      onSnapshot(q, (snapshot) => {
+        const container = document.getElementById("comments-container");
+        container.innerHTML = "";
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const commentId = docSnap.id;
+          const commentBox = document.createElement("div");
+          commentBox.className = "comment-box";
+
+          commentBox.innerHTML = `
+            <div class="comment-header">${data.name}</div>
+            <div class="comment-text">${data.text}</div>
+            <div class="meta">${data.timestamp?.toDate().toLocaleString() || "..."}</div>
+            <div class="actions">
+              ${(data.uid === currentUser.uid || currentUser.role === "admin") ? `<button onclick="deleteComment('${commentId}')">حذف</button>` : ""}
+              ${data.uid === currentUser.uid ? `<button onclick="editComment('${commentId}', \`${data.text}\`)" >تعديل</button>` : ""}
+              <button onclick="showReplyBox('${commentId}')">تعقيب</button>
+            </div>
+            <div class="reply-container" id="replies-${commentId}"></div>
+            <div class="input-area reply-box" id="reply-box-${commentId}" style="display:none;">
+              <textarea id="reply-text-${commentId}" rows="2" placeholder="اكتب تعقيبك..."></textarea>
+              <button class="send" onclick="addReply('${commentId}')">إرسال التعقيب</button>
+            </div>
+          `;
+
+          container.appendChild(commentBox);
+          loadReplies(commentId);
+        });
       });
     }
 
-    function addReply(commentId, replyText) {
-      if (!replyText.trim()) return;
-      const reply = {
-        text: replyText,
-        createdAt: new Date(),
-        userId: auth.currentUser.uid,
-      };
-
-      db.collection("clarifications-comments").doc(commentId)
-        .collection("replies").add(reply)
-        .then(() => loadComments(auth.currentUser));
+    async function deleteComment(id) {
+      await deleteDoc(doc(db, "clarifications-comments", id));
     }
 
-    async function loadComments(currentUser) {
-      const container = document.getElementById("comments-container");
-      container.innerHTML = "";
-      const snapshot = await db.collection("clarifications-comments").orderBy("createdAt", "desc").get();
+    async function editComment(id, oldText) {
+      const newText = prompt("تعديل التعليق:", oldText);
+      if (newText && newText !== oldText) {
+        await updateDoc(doc(db, "clarifications-comments", id), { text: newText });
+      }
+    }
 
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.className = "comment-box";
-        div.innerHTML = `
-          <p>${data.text}</p>
-          <div class="reply-form">
-            <textarea placeholder="رد..." id="reply-${doc.id}"></textarea>
-            <button onclick="addReply('${doc.id}', document.getElementById('reply-${doc.id}').value)">إرسال الرد</button>
-          </div>
-          <div class="replies" id="replies-${doc.id}"></div>
-        `;
-        container.appendChild(div);
+    function showReplyBox(commentId) {
+      document.getElementById(`reply-box-${commentId}`).style.display = 'block';
+    }
 
-        const repliesSnapshot = await db.collection("clarifications-comments").doc(doc.id).collection("replies").orderBy("createdAt").get();
-        const repliesDiv = document.getElementById(`replies-${doc.id}`);
-        repliesSnapshot.forEach(replyDoc => {
-          const replyData = replyDoc.data();
-          const replyEl = document.createElement("div");
-          replyEl.className = "reply-box";
-          replyEl.textContent = replyData.text;
-          repliesDiv.appendChild(replyEl);
+    async function addReply(commentId) {
+      const replyText = document.getElementById(`reply-text-${commentId}`).value;
+      if (!replyText.trim()) return;
+      const repliesRef = collection(db, `clarifications-comments/${commentId}/replies`);
+      await addDoc(repliesRef, {
+        text: replyText,
+        uid: currentUser.uid,
+        name: currentUser.displayName || "مستخدم مجهول",
+        timestamp: serverTimestamp()
+      });
+      document.getElementById(`reply-text-${commentId}`).value = "";
+      document.getElementById(`reply-box-${commentId}`).style.display = 'none';
+    }
+
+    function loadReplies(commentId) {
+      const repliesRef = collection(db, `clarifications-comments/${commentId}/replies`);
+      const q = query(repliesRef, orderBy("timestamp", "asc"));
+      const container = document.getElementById(`replies-${commentId}`);
+
+      onSnapshot(q, (snapshot) => {
+        container.innerHTML = "";
+        snapshot.forEach(replyDoc => {
+          const reply = replyDoc.data();
+          const replyDiv = document.createElement("div");
+          replyDiv.className = "reply-box";
+          replyDiv.innerHTML = `
+            <div class="reply-header">${reply.name}</div>
+            <div class="reply-text">${reply.text}</div>
+            <div class="meta">${reply.timestamp?.toDate().toLocaleString() || "..."}</div>
+            <div class="actions">
+              ${(reply.uid === currentUser.uid || currentUser.role === "admin") ? `<button onclick="deleteReply('${commentId}', '${replyDoc.id}')">حذف</button>` : ""}
+              ${reply.uid === currentUser.uid ? `<button onclick="editReply('${commentId}', '${replyDoc.id}', \`${reply.text}\`)">تعديل</button>` : ""}
+            </div>
+          `;
+          container.appendChild(replyDiv);
         });
+      });
+    }
+
+    async function deleteReply(commentId, replyId) {
+      const replyRef = doc(db, `clarifications-comments/${commentId}/replies`, replyId);
+      await deleteDoc(replyRef);
+    }
+
+    async function editReply(commentId, replyId, oldText) {
+      const newText = prompt("تعديل التعقيب:", oldText);
+      if (newText && newText !== oldText) {
+        const replyRef = doc(db, `clarifications-comments/${commentId}/replies`, replyId);
+        await updateDoc(replyRef, { text: newText });
       }
     }
   </script>
