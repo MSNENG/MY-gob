@@ -26,7 +26,7 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: right;
-    }
+    }   
     textarea {
       width: 100%;
       height: 100px;
@@ -88,7 +88,7 @@
     .delete-btn:hover { background-color: #b71c1c; }
     .edit-btn { background-color: #3949ab; left: 55px; }
     .edit-btn:hover { background-color: #1a237e; }
-    .reply-btn { background-color: #00bfa5; right: 5px; }
+    .reply-btn { background-color: #00bfa5; left: 5px; }
     .reply-btn:hover { background-color: #008e76; }
     .save-reply-btn { background-color: #43a047; right: 90px; }
     .save-reply-btn:hover { background-color: #2e7d32; }
@@ -268,7 +268,6 @@
   }
 
   async function deleteComment(commentId) {
-    // حذف التعليق مع ردوده
     const repliesSnapshot = await db.collection("clarifications-comments").doc(commentId).collection("replies").get();
     const batch = db.batch();
 
@@ -279,12 +278,11 @@
     await batch.commit();
   }
 
-  // تعديل تعليق
   async function editComment(commentId, oldText) {
     const commentDiv = document.querySelector(`#comment-${commentId}`);
 
     if (commentDiv.querySelector('.edit-area')) {
-      return; // لا تكرر مربع التعديل
+      return;
     }
 
     const editArea = document.createElement("textarea");
@@ -307,7 +305,6 @@
     }
   }
 
-  // إظهار مربع الرد على تعليق
   function showReplyArea(commentId) {
     const repliesContainer = document.getElementById(`replies-${commentId}`);
 
@@ -336,7 +333,6 @@
     repliesContainer.appendChild(cancelReplyBtn);
   }
 
-  // إرسال رد
   async function sendReply(commentId, replyText) {
     if (!replyText.trim()) {
       alert("يرجى كتابة رد.");
@@ -353,7 +349,6 @@
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // إزالة مربع الرد بعد الإرسال
     const repliesContainer = document.getElementById(`replies-${commentId}`);
     const replyArea = repliesContainer.querySelector(".reply-area");
     const saveReplyBtn = repliesContainer.querySelector(".save-reply-btn");
@@ -363,7 +358,6 @@
     if (cancelReplyBtn) cancelReplyBtn.remove();
   }
 
-  // تحميل الردود داخل كل تعليق
   function loadReplies(commentId, container) {
     db.collection("clarifications-comments").doc(commentId).collection("replies")
       .orderBy("timestamp", "asc")
@@ -387,7 +381,6 @@
             <small>${formattedDate}</small>
           `;
 
-          // أزرار تعديل وحذف الرد
           if (data.userId === currentUser.uid || isAdmin) {
             const editBtn = document.createElement("button");
             editBtn.className = "edit-btn";
@@ -409,7 +402,6 @@
       });
   }
 
-  // تعديل رد
   function editReply(commentId, replyId, oldText) {
     const replyDiv = document.querySelector(`#reply-${replyId}`);
 
@@ -437,7 +429,6 @@
     }
   }
 
-  // حذف رد
   async function deleteReply(commentId, replyId) {
     await db.collection("clarifications-comments").doc(commentId).collection("replies").doc(replyId).delete();
   }
