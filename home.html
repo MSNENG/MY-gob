@@ -73,7 +73,6 @@
         }
       });
 
-      // الأزرار
       document.getElementById("btn-all").addEventListener("click", () => {
         window.location.href = "All.html";
       });
@@ -88,6 +87,10 @@
 
       document.getElementById("btn-3").addEventListener("click", () => {
         window.location.href = "General-news.html";
+      });
+
+      document.getElementById("btn-urgent-news").addEventListener("click", () => {
+        window.location.href = "urgent-news.html";
       });
 
       document.getElementById("btn-4").addEventListener("click", () => {
@@ -106,9 +109,12 @@
         window.location.href = "AD.html";
       });
 
-      // تعديل الزر الأخير ليكون "الأسئلة الشائعة؟" ويقود إلى صفحة asked-questions
       document.getElementById("btn-asked-questions").addEventListener("click", () => {
         window.location.href = "asked-questions.html";
+      });
+
+      document.getElementById("btn-contact").addEventListener("click", () => {
+        window.location.href = "contact.html";
       });
     };
   </script>
@@ -177,6 +183,15 @@
       transform: translateY(-2px);
     }
 
+    .links-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     .clickable-text {
       font-size: 18px;
       color: #6200ea;
@@ -202,11 +217,16 @@
     <button id="btn-messages" class="number-btn">رسالة</button>
     <button id="btn-2" class="number-btn">أخبار الضاحية</button>
     <button id="btn-3" class="number-btn">أخبار عامة</button>
+    <button id="btn-urgent-news" class="number-btn">أخبار عاجلة</button>
     <button id="btn-4" class="number-btn">مقالات أهل الضاحية</button>
     <button id="btn-5" class="number-btn">مواهب</button>
     <button id="btn-6" class="number-btn">إستفسارات</button>
     <button id="btn-8" class="number-btn">إعلانات</button>
-    <span id="btn-asked-questions" class="clickable-text">الأسئلة الشائعة؟</span>
+
+    <div class="links-row">
+      <span id="btn-asked-questions" class="clickable-text">الأسئلة الشائعة؟</span>
+      <span id="btn-contact" class="clickable-text">تواصل</span>
+    </div>
   </div>
 
 </body>
