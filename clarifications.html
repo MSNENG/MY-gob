@@ -91,7 +91,9 @@
 </div>
 
 <script>
-  const firebaseConfig = { /* بيانات firebase الخاصة بك */ };
+  const firebaseConfig = {
+    // ضع هنا إعدادات Firebase الخاصة بك
+  };
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
@@ -123,7 +125,9 @@
       userName,
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
+
     document.getElementById("commentInput").value = "";
+    // لا حاجة لـ loadComments هنا لأنه يتم التحديث تلقائيًا عبر onSnapshot
   }
 
   function loadComments() {
