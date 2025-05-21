@@ -69,81 +69,6 @@
       display: none;
     }
   </style>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
-      measurementId: "G-W2XBV7XH66"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "index.html";
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-      getDoc(userRef).then(docSnap => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.role === "admin") {
-            loadMessages();
-          }
-        }
-      });
-    });
-
-    async function sendMessage() {
-      const textarea = document.getElementById("message-input");
-      const text = textarea.value.trim();
-      if (text === "") return alert("الرجاء كتابة رسالة.");
-
-      try {
-        await addDoc(collection(db, "contact-messages"), {
-          text: text,
-          timestamp: new Date(),
-          uid: auth.currentUser.uid
-        });
-        textarea.value = "";
-        alert("تم إرسال الرسالة.");
-      } catch (error) {
-        alert("خطأ في الإرسال: " + error.message);
-      }
-    }
-
-    function loadMessages() {
-      const messagesContainer = document.getElementById("messages-container");
-      const messagesList = document.getElementById("messages-list");
-      messagesContainer.classList.remove("hidden");
-
-      const q = query(collection(db, "contact-messages"), orderBy("timestamp", "desc"));
-      onSnapshot(q, (snapshot) => {
-        messagesList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const div = document.createElement("div");
-          div.className = "message";
-          const time = data.timestamp?.toDate?.() || new Date();
-          div.textContent = time.toLocaleString() + " — " + data.text;
-          messagesList.appendChild(div);
-        });
-      });
-    }
-  </script>
 </head>
 <body>
   <header>
@@ -151,11 +76,13 @@
   </header>
 
   <textarea id="message-input" placeholder="اكتب رسالتك هنا..."></textarea><br/>
-  <button onclick="sendMessage()">إرسال</button>
+  <button id="send-btn">إرسال</button>
 
   <div id="messages-container" class="messages-container hidden">
     <h2>الرسائل الواردة:</h2>
     <div id="messages-list"></div>
   </div>
+
+  <script type="module" src="contact.js"></script>
 </body>
 </html>
