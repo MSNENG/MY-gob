@@ -61,9 +61,21 @@
     .message {
       border-bottom: 1px solid #ddd;
       padding: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .message:last-child {
       border-bottom: none;
+    }
+    .delete-button {
+      background-color: red;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
     }
     .hidden {
       display: none;
@@ -74,7 +86,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, doc, deleteDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
@@ -90,26 +102,26 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    let isAdmin = false;
+
     onAuthStateChanged(auth, user => {
       if (!user) {
         window.location.href = "index.html";
         return;
       }
 
-      // التحقق من صلاحية المشرف
       const userRef = doc(db, "users", user.uid);
       getDoc(userRef).then(docSnap => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.role !== "admin") {
-            // غير مشرف: إخفاء الرسائل
-            document.getElementById("messages-container").classList.add("hidden");
-          } else {
-            // مشرف: عرض الرسائل
+          if (data.role === "admin") {
+            isAdmin = true;
+            document.getElementById("messages-container").classList.remove("hidden");
             loadMessages();
+          } else {
+            document.getElementById("messages-container").classList.add("hidden");
           }
         } else {
-          // إذا لم توجد بيانات المستخدم: إخفاء الرسائل
           document.getElementById("messages-container").classList.add("hidden");
         }
       });
@@ -123,11 +135,12 @@
       try {
         await addDoc(collection(db, "contact-messages"), {
           text: text,
-          timestamp: new Date(),
+          timestamp: serverTimestamp(),
           uid: auth.currentUser.uid
         });
         textarea.value = "";
         alert("تم إرسال الرسالة.");
+        // TODO: إرسال إشعار للمشرف عند توفر FCM
       } catch (error) {
         alert("خطأ في الإرسال: " + error.message);
       }
@@ -139,12 +152,30 @@
 
       onSnapshot(q, (snapshot) => {
         messagesContainer.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          const time = data.timestamp?.toDate?.() || new Date();
+
           const messageDiv = document.createElement("div");
           messageDiv.className = "message";
-          const time = data.timestamp?.toDate?.() || new Date();
-          messageDiv.textContent = time.toLocaleString() + " — " + data.text;
+
+          const messageText = document.createElement("div");
+          messageText.innerHTML = `<strong>${time.toLocaleString()}</strong><br>${data.text}`;
+
+          messageDiv.appendChild(messageText);
+
+          if (isAdmin) {
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-button";
+            deleteBtn.textContent = "حذف";
+            deleteBtn.onclick = () => {
+              if (confirm("هل أنت متأكد من حذف هذه الرسالة؟")) {
+                deleteDoc(doc(db, "contact-messages", docSnap.id));
+              }
+            };
+            messageDiv.appendChild(deleteBtn);
+          }
+
           messagesContainer.appendChild(messageDiv);
         });
       });
