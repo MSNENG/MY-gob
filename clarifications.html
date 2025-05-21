@@ -1,242 +1,447 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>توضيحات</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>التوضيحات</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+
   <style>
     body {
       font-family: 'Cairo', sans-serif;
       background-color: #f0f0f0;
       padding: 20px;
-      direction: rtl;
-    }
-    header {
-      background-color: #6200ea;
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
       text-align: center;
-      margin-bottom: 20px;
     }
-    .comment-box, .reply-box {
-      background: white;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .comment-header, .reply-header {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .comment-text, .reply-text {
-      margin: 10px 0;
-    }
-    .meta {
-      color: gray;
-      font-size: 0.9em;
-    }
-    .actions {
-      margin-top: 10px;
-    }
-    .actions button {
-      margin-left: 10px;
-      padding: 5px 10px;
-      border: none;
-      border-radius: 8px;
-      background-color: #e0e0e0;
-      cursor: pointer;
-    }
-    .actions button:hover {
-      background-color: #ccc;
-    }
-    .input-area {
-      margin-bottom: 30px;
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: right;
     }
     textarea {
       width: 100%;
+      height: 100px;
       padding: 10px;
-      border-radius: 10px;
+      font-size: 16px;
+      border-radius: 8px;
       border: 1px solid #ccc;
+      margin-bottom: 10px;
       resize: vertical;
-      font-family: 'Cairo', sans-serif;
     }
-    button.send {
+    input[type="file"] {
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
       background-color: #6200ea;
       color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 10px;
       font-size: 16px;
-      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      margin-bottom: 20px;
     }
-    button.send:hover {
-      background-color: #3700b3;
+    .message, .reply {
+      background: #f9f9f9;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      border-right: 4px solid #6200ea;
+      position: relative;
+      word-wrap: break-word;
     }
-    .reply-container {
+    .message {
+      margin-bottom: 20px;
+    }
+    .message-header {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #6200ea;
+    }
+    .reply-header {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+    .delete-btn, .edit-btn, .reply-btn, .save-reply-btn, .cancel-reply-btn {
+      position: absolute;
+      top: 5px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border: none;
+      color: white;
+      transition: background-color 0.2s;
+    }
+    .delete-btn { background-color: #e53935; left: 5px; }
+    .delete-btn:hover { background-color: #b71c1c; }
+    .edit-btn { background-color: #3949ab; left: 55px; }
+    .edit-btn:hover { background-color: #1a237e; }
+    .reply-btn { background-color: #00bfa5; right: 5px; }
+    .reply-btn:hover { background-color: #008e76; }
+    .save-reply-btn { background-color: #43a047; right: 90px; }
+    .save-reply-btn:hover { background-color: #2e7d32; }
+    .cancel-reply-btn { background-color: #f4511e; right: 150px; }
+    .cancel-reply-btn:hover { background-color: #bf360c; }
+    .message img, .reply img {
+      max-width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+    .edit-area, .reply-area {
+      width: 100%;
+      height: 80px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+    }
+    .replies-container {
       margin-right: 20px;
+      border-left: 3px solid #ccc;
+      padding-left: 15px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h2>قسم التوضيحات</h2>
-  </header>
 
-  <div class="input-area">
-    <textarea id="new-comment" rows="4" placeholder="اكتب تعليقك هنا..."></textarea>
-    <button class="send" onclick="addComment()">إرسال</button>
-  </div>
+<div class="container">
+  <h2>التوضيحات</h2>
+  <textarea id="commentInput" placeholder="اكتب توضيحًا هنا..."></textarea>
+  <input type="file" id="imageInput" accept="image/*" />
+  <button onclick="sendComment()">إرسال</button>
+  <div id="commentsList" style="margin-top: 30px;"></div>
+</div>
 
-  <div id="comments-container"></div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+    authDomain: "my-gob.firebaseapp.com",
+    projectId: "my-gob",
+    storageBucket: "my-gob.appspot.com",
+    messagingSenderId: "464127979375",
+    appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
+  };
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc,
-      serverTimestamp, query, orderBy, onSnapshot
-    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  const storage = firebase.storage();
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
-      authDomain: "my-gob.firebaseapp.com",
-      projectId: "my-gob",
-      storageBucket: "my-gob.appspot.com",
-      messagingSenderId: "464127979375",
-      appId: "1:464127979375:web:dccc4c8ee64738cbac029a"
-    };
+  let currentUser = null;
+  let isAdmin = false;
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getFirestore();
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
 
-    let currentUser;
+    currentUser = user;
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    const userData = userDoc.data();
+    isAdmin = userData?.role === "admin";
+    listenToComments();
+  });
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        loadComments();
-      } else {
-        window.location.href = "index.html";
+  async function sendComment() {
+    const input = document.getElementById("commentInput");
+    const text = input.value.trim();
+    const file = document.getElementById("imageInput").files[0];
+
+    if (!text && !file) {
+      alert("يرجى كتابة توضيح أو إرفاق صورة على الأقل");
+      return;
+    }
+
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || "مستخدم";
+
+    let imageUrl = "";
+
+    if (file) {
+      try {
+        const storageRef = storage.ref().child("clarifications_images/" + Date.now() + "_" + file.name);
+        const uploadTask = await storageRef.put(file);
+        imageUrl = await uploadTask.ref.getDownloadURL();
+      } catch (error) {
+        console.error("خطأ أثناء رفع الصورة: ", error);
+        alert("حدث خطأ أثناء رفع الصورة.");
+        return;
       }
+    }
+
+    await db.collection("clarifications-comments").add({
+      text,
+      imageUrl,
+      userId: currentUser.uid,
+      userName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    async function addComment() {
-      const text = document.getElementById("new-comment").value;
-      if (!text.trim()) return;
+    input.value = "";
+    document.getElementById("imageInput").value = "";
+  }
 
-      await addDoc(collection(db, "clarifications-comments"), {
-        text,
-        uid: currentUser.uid,
-        name: currentUser.displayName || "مستخدم مجهول",
-        timestamp: serverTimestamp()
+  function listenToComments() {
+    const commentsList = document.getElementById("commentsList");
+
+    db.collection("clarifications-comments").orderBy("timestamp", "desc").onSnapshot((snapshot) => {
+      commentsList.innerHTML = "";
+
+      snapshot.forEach(async (doc) => {
+        const data = doc.data();
+        const commentId = doc.id;
+
+        const commentDiv = document.createElement("div");
+        commentDiv.className = "message";
+        commentDiv.id = `comment-${commentId}`;
+
+        const date = data.timestamp?.toDate?.();
+        const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
+
+        let commentHTML = `
+          <div class="message-header">${data.userName || "مستخدم مجهول"}</div>
+          <div class="message-text">${escapeHtml(data.text || "")}</div>
+          <small>${formattedDate}</small>
+        `;
+
+        if (data.imageUrl) {
+          commentHTML += `<img src="${data.imageUrl}" alt="صورة مرفقة" />`;
+        }
+
+        commentDiv.innerHTML = commentHTML;
+
+        // أزرار التعديل، الحذف، الرد
+        if (data.userId === currentUser.uid || isAdmin) {
+          const editBtn = document.createElement("button");
+          editBtn.className = "edit-btn";
+          editBtn.textContent = "تعديل";
+          editBtn.onclick = () => editComment(commentId, data.text);
+          commentDiv.appendChild(editBtn);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete-btn";
+          deleteBtn.textContent = "حذف";
+          deleteBtn.onclick = () => deleteComment(commentId);
+          commentDiv.appendChild(deleteBtn);
+        }
+
+        const replyBtn = document.createElement("button");
+        replyBtn.className = "reply-btn";
+        replyBtn.textContent = "رد";
+        replyBtn.onclick = () => showReplyArea(commentId);
+        commentDiv.appendChild(replyBtn);
+
+        // حاوية الردود
+        const repliesContainer = document.createElement("div");
+        repliesContainer.className = "replies-container";
+        repliesContainer.id = `replies-${commentId}`;
+        commentDiv.appendChild(repliesContainer);
+
+        commentsList.appendChild(commentDiv);
+
+        // تحميل الردود لهذا التعليق
+        loadReplies(commentId, repliesContainer);
       });
-      document.getElementById("new-comment").value = "";
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  async function deleteComment(commentId) {
+    // حذف التعليق مع ردوده
+    const repliesSnapshot = await db.collection("clarifications-comments").doc(commentId).collection("replies").get();
+    const batch = db.batch();
+
+    repliesSnapshot.forEach((replyDoc) => {
+      batch.delete(replyDoc.ref);
+    });
+    batch.delete(db.collection("clarifications-comments").doc(commentId));
+    await batch.commit();
+  }
+
+  // تعديل تعليق
+  async function editComment(commentId, oldText) {
+    const commentDiv = document.querySelector(`#comment-${commentId}`);
+
+    if (commentDiv.querySelector('.edit-area')) {
+      return; // لا تكرر مربع التعديل
     }
 
-    function loadComments() {
-      const q = query(collection(db, "clarifications-comments"), orderBy("timestamp", "desc"));
-      onSnapshot(q, (snapshot) => {
-        const container = document.getElementById("comments-container");
+    const editArea = document.createElement("textarea");
+    editArea.className = "edit-area";
+    editArea.value = oldText;
+
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "حفظ التعديل";
+    saveBtn.onclick = () => saveEdit(commentId, editArea.value);
+
+    commentDiv.appendChild(editArea);
+    commentDiv.appendChild(saveBtn);
+  }
+
+  async function saveEdit(commentId, newText) {
+    if (newText.trim()) {
+      await db.collection("clarifications-comments").doc(commentId).update({
+        text: newText
+      });
+    }
+  }
+
+  // إظهار مربع الرد على تعليق
+  function showReplyArea(commentId) {
+    const repliesContainer = document.getElementById(`replies-${commentId}`);
+
+    if (repliesContainer.querySelector('.reply-area')) return;
+
+    const replyArea = document.createElement("textarea");
+    replyArea.className = "reply-area";
+    replyArea.placeholder = "اكتب ردًا هنا...";
+
+    const saveReplyBtn = document.createElement("button");
+    saveReplyBtn.className = "save-reply-btn";
+    saveReplyBtn.textContent = "إرسال الرد";
+    saveReplyBtn.onclick = () => sendReply(commentId, replyArea.value);
+
+    const cancelReplyBtn = document.createElement("button");
+    cancelReplyBtn.className = "cancel-reply-btn";
+    cancelReplyBtn.textContent = "إلغاء";
+    cancelReplyBtn.onclick = () => {
+      replyArea.remove();
+      saveReplyBtn.remove();
+      cancelReplyBtn.remove();
+    };
+
+    repliesContainer.appendChild(replyArea);
+    repliesContainer.appendChild(saveReplyBtn);
+    repliesContainer.appendChild(cancelReplyBtn);
+  }
+
+  // إرسال رد
+  async function sendReply(commentId, replyText) {
+    if (!replyText.trim()) {
+      alert("يرجى كتابة رد.");
+      return;
+    }
+
+    const userDoc = await db.collection("users").doc(currentUser.uid).get();
+    const userName = userDoc.data()?.name || "مستخدم";
+
+    await db.collection("clarifications-comments").doc(commentId).collection("replies").add({
+      text: replyText,
+      userId: currentUser.uid,
+      userName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // إزالة مربع الرد بعد الإرسال
+    const repliesContainer = document.getElementById(`replies-${commentId}`);
+    const replyArea = repliesContainer.querySelector(".reply-area");
+    const saveReplyBtn = repliesContainer.querySelector(".save-reply-btn");
+    const cancelReplyBtn = repliesContainer.querySelector(".cancel-reply-btn");
+    if (replyArea) replyArea.remove();
+    if (saveReplyBtn) saveReplyBtn.remove();
+    if (cancelReplyBtn) cancelReplyBtn.remove();
+  }
+
+  // تحميل الردود داخل كل تعليق
+  function loadReplies(commentId, container) {
+    db.collection("clarifications-comments").doc(commentId).collection("replies")
+      .orderBy("timestamp", "asc")
+      .onSnapshot((snapshot) => {
         container.innerHTML = "";
-        snapshot.forEach(docSnap => {
-          const data = docSnap.data();
-          const commentId = docSnap.id;
-          const commentBox = document.createElement("div");
-          commentBox.className = "comment-box";
 
-          commentBox.innerHTML = `
-            <div class="comment-header">${data.name}</div>
-            <div class="comment-text">${data.text}</div>
-            <div class="meta">${data.timestamp?.toDate().toLocaleString() || "..."}</div>
-            <div class="actions">
-              ${(data.uid === currentUser.uid || currentUser.role === "admin") ? `<button onclick="deleteComment('${commentId}')">حذف</button>` : ""}
-              ${data.uid === currentUser.uid ? `<button onclick="editComment('${commentId}', \`${data.text}\`)" >تعديل</button>` : ""}
-              <button onclick="showReplyBox('${commentId}')">تعقيب</button>
-            </div>
-            <div class="reply-container" id="replies-${commentId}"></div>
-            <div class="input-area reply-box" id="reply-box-${commentId}" style="display:none;">
-              <textarea id="reply-text-${commentId}" rows="2" placeholder="اكتب تعقيبك..."></textarea>
-              <button class="send" onclick="addReply('${commentId}')">إرسال التعقيب</button>
-            </div>
-          `;
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const replyId = doc.id;
 
-          container.appendChild(commentBox);
-          loadReplies(commentId);
-        });
-      });
-    }
-
-    async function deleteComment(id) {
-      await deleteDoc(doc(db, "clarifications-comments", id));
-    }
-
-    async function editComment(id, oldText) {
-      const newText = prompt("تعديل التعليق:", oldText);
-      if (newText && newText !== oldText) {
-        await updateDoc(doc(db, "clarifications-comments", id), { text: newText });
-      }
-    }
-
-    function showReplyBox(commentId) {
-      document.getElementById(`reply-box-${commentId}`).style.display = 'block';
-    }
-
-    async function addReply(commentId) {
-      const replyText = document.getElementById(`reply-text-${commentId}`).value;
-      if (!replyText.trim()) return;
-      const repliesRef = collection(db, `clarifications-comments/${commentId}/replies`);
-      await addDoc(repliesRef, {
-        text: replyText,
-        uid: currentUser.uid,
-        name: currentUser.displayName || "مستخدم مجهول",
-        timestamp: serverTimestamp()
-      });
-      document.getElementById(`reply-text-${commentId}`).value = "";
-      document.getElementById(`reply-box-${commentId}`).style.display = 'none';
-    }
-
-    function loadReplies(commentId) {
-      const repliesRef = collection(db, `clarifications-comments/${commentId}/replies`);
-      const q = query(repliesRef, orderBy("timestamp", "asc"));
-      const container = document.getElementById(`replies-${commentId}`);
-
-      onSnapshot(q, (snapshot) => {
-        container.innerHTML = "";
-        snapshot.forEach(replyDoc => {
-          const reply = replyDoc.data();
           const replyDiv = document.createElement("div");
-          replyDiv.className = "reply-box";
+          replyDiv.className = "reply";
+          replyDiv.id = `reply-${replyId}`;
+
+          const date = data.timestamp?.toDate?.();
+          const formattedDate = date ? date.toLocaleString("ar-EG") : "غير متوفر";
+
           replyDiv.innerHTML = `
-            <div class="reply-header">${reply.name}</div>
-            <div class="reply-text">${reply.text}</div>
-            <div class="meta">${reply.timestamp?.toDate().toLocaleString() || "..."}</div>
-            <div class="actions">
-              ${(reply.uid === currentUser.uid || currentUser.role === "admin") ? `<button onclick="deleteReply('${commentId}', '${replyDoc.id}')">حذف</button>` : ""}
-              ${reply.uid === currentUser.uid ? `<button onclick="editReply('${commentId}', '${replyDoc.id}', \`${reply.text}\`)">تعديل</button>` : ""}
-            </div>
+            <div class="reply-header">${escapeHtml(data.userName || "مستخدم مجهول")}</div>
+            <div class="reply-text">${escapeHtml(data.text || "")}</div>
+            <small>${formattedDate}</small>
           `;
+
+          // أزرار تعديل وحذف الرد
+          if (data.userId === currentUser.uid || isAdmin) {
+            const editBtn = document.createElement("button");
+            editBtn.className = "edit-btn";
+            editBtn.style.top = "25px";
+            editBtn.textContent = "تعديل";
+            editBtn.onclick = () => editReply(commentId, replyId, data.text);
+            replyDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.style.top = "25px";
+            deleteBtn.textContent = "حذف";
+            deleteBtn.onclick = () => deleteReply(commentId, replyId);
+            replyDiv.appendChild(deleteBtn);
+          }
+
           container.appendChild(replyDiv);
         });
       });
+  }
+
+  // تعديل رد
+  function editReply(commentId, replyId, oldText) {
+    const replyDiv = document.querySelector(`#reply-${replyId}`);
+
+    if (replyDiv.querySelector('.edit-area')) {
+      return;
     }
 
-    async function deleteReply(commentId, replyId) {
-      const replyRef = doc(db, `clarifications-comments/${commentId}/replies`, replyId);
-      await deleteDoc(replyRef);
-    }
+    const editArea = document.createElement("textarea");
+    editArea.className = "edit-area";
+    editArea.value = oldText;
 
-    async function editReply(commentId, replyId, oldText) {
-      const newText = prompt("تعديل التعقيب:", oldText);
-      if (newText && newText !== oldText) {
-        const replyRef = doc(db, `clarifications-comments/${commentId}/replies`, replyId);
-        await updateDoc(replyRef, { text: newText });
-      }
+    const saveBtn = document.createElement("button");
+    saveBtn.textContent = "حفظ التعديل";
+    saveBtn.onclick = () => saveReplyEdit(commentId, replyId, editArea.value);
+
+    replyDiv.appendChild(editArea);
+    replyDiv.appendChild(saveBtn);
+  }
+
+  async function saveReplyEdit(commentId, replyId, newText) {
+    if (newText.trim()) {
+      await db.collection("clarifications-comments").doc(commentId).collection("replies").doc(replyId).update({
+        text: newText
+      });
     }
-  </script>
+  }
+
+  // حذف رد
+  async function deleteReply(commentId, replyId) {
+    await db.collection("clarifications-comments").doc(commentId).collection("replies").doc(replyId).delete();
+  }
+</script>
+
 </body>
 </html>
