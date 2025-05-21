@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>توضيحات</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f0f0f0;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #6200ea;
+    }
+    #comment-form, .reply-form {
+      margin-bottom: 20px;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #6200ea;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .comment-box, .reply-box {
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .replies {
+      margin-right: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>التوضيحات</h2>
+
+  <div id="comment-form">
+    <textarea id="comment-input" placeholder="اكتب تعليقك هنا..."></textarea>
+    <button onclick="addComment()">إرسال</button>
+  </div>
+
+  <div id="comments-container"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loadComments(user);
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+
+    function addComment() {
+      const text = document.getElementById("comment-input").value;
+      if (!text.trim()) return;
+
+      const comment = {
+        text,
+        createdAt: new Date(),
+        userId: auth.currentUser.uid,
+        replies: []
+      };
+
+      db.collection("clarifications-comments").add(comment).then(() => {
+        document.getElementById("comment-input").value = "";
+        loadComments(auth.currentUser);
+      });
+    }
+
+    function addReply(commentId, replyText) {
+      if (!replyText.trim()) return;
+      const reply = {
+        text: replyText,
+        createdAt: new Date(),
+        userId: auth.currentUser.uid,
+      };
+
+      db.collection("clarifications-comments").doc(commentId)
+        .collection("replies").add(reply)
+        .then(() => loadComments(auth.currentUser));
+    }
+
+    async function loadComments(currentUser) {
+      const container = document.getElementById("comments-container");
+      container.innerHTML = "";
+      const snapshot = await db.collection("clarifications-comments").orderBy("createdAt", "desc").get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "comment-box";
+        div.innerHTML = `
+          <p>${data.text}</p>
+          <div class="reply-form">
+            <textarea placeholder="رد..." id="reply-${doc.id}"></textarea>
+            <button onclick="addReply('${doc.id}', document.getElementById('reply-${doc.id}').value)">إرسال الرد</button>
+          </div>
+          <div class="replies" id="replies-${doc.id}"></div>
+        `;
+        container.appendChild(div);
+
+        const repliesSnapshot = await db.collection("clarifications-comments").doc(doc.id).collection("replies").orderBy("createdAt").get();
+        const repliesDiv = document.getElementById(`replies-${doc.id}`);
+        repliesSnapshot.forEach(replyDoc => {
+          const replyData = replyDoc.data();
+          const replyEl = document.createElement("div");
+          replyEl.className = "reply-box";
+          replyEl.textContent = replyData.text;
+          repliesDiv.appendChild(replyEl);
+        });
+      }
+    }
+  </script>
+</body>
+</html>
