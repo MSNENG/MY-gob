@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>تواصل</title>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f5f5f5;
+      padding: 20px;
+      direction: rtl;
+      text-align: center;
+    }
+
+    textarea {
+      width: 90%;
+      max-width: 500px;
+      height: 150px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      margin-bottom: 15px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3700b3;
+    }
+
+    .message-box {
+      background-color: #fff;
+      margin: 10px auto;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      max-width: 600px;
+      text-align: right;
+    }
+
+    .timestamp {
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>اكتب رسالتك</h2>
+  <textarea id="message-input" placeholder="اكتب هنا..."></textarea><br>
+  <button id="send-btn">إرسال</button>
+
+  <div id="messages-container" style="margin-top: 30px;"></div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, orderBy, getDocs, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLOEjRfXigGXljIiANe22x_SXRQDQKmbs",
+      authDomain: "my-gob.firebaseapp.com",
+      projectId: "my-gob",
+      storageBucket: "my-gob.appspot.com",
+      messagingSenderId: "464127979375",
+      appId: "1:464127979375:web:dccc4c8ee64738cbac029a",
+      measurementId: "G-W2XBV7XH66"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let isAdmin = false;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        isAdmin = userData.role === "admin";
+
+        if (isAdmin) {
+          loadMessages();
+        }
+      }
+    });
+
+    const messageInput = document.getElementById("message-input");
+    const sendBtn = document.getElementById("send-btn");
+
+    sendBtn.addEventListener("click", async () => {
+      const text = messageInput.value.trim();
+      if (!text) return alert("الرجاء كتابة رسالة.");
+
+      try {
+        await addDoc(collection(db, "contact-messages"), {
+          text,
+          timestamp: serverTimestamp()
+        });
+
+        alert("تم إرسال الرسالة بنجاح.");
+        messageInput.value = "";
+      } catch (e) {
+        alert("حدث خطأ أثناء الإرسال.");
+        console.error(e);
+      }
+    });
+
+    async function loadMessages() {
+      const q = query(collection(db, "contact-messages"), orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(q);
+      const container = document.getElementById("messages-container");
+      container.innerHTML = "<h3>الرسائل الواردة:</h3>";
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const msgBox = document.createElement("div");
+        msgBox.className = "message-box";
+
+        const date = data.timestamp?.toDate?.().toLocaleString() || "بدون تاريخ";
+
+        msgBox.innerHTML = `
+          <div>${data.text}</div>
+          <div class="timestamp">${date}</div>
+        `;
+        container.appendChild(msgBox);
+      });
+    }
+  </script>
+</body>
+</html>
