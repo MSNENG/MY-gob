@@ -1,57 +1,4 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title> كل التعليقات تعرض من الأحدث للأقدم</title>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-
-  <style>
-    body {
-      font-family: 'Cairo', sans-serif;
-      background-color: #f0f0f0;
-      padding: 20px;
-      text-align: center;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .comment {
-      background: #f9f9f9;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      border-right: 4px solid #6200ea;
-      position: relative;
-    }
-    .comment img {
-      max-width: 100%;
-      margin-top: 10px;
-      border-radius: 8px;
-    }
-    .comment .section-name {
-      font-size: 14px;
-      color: #6200ea;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <h2>كل التعليقات تعرض من الأحدث للأقدم</h2>
-  <div id="commentsList"></div>
-</div>
+<!-- ... نفس رأس الصفحة السابقة ... -->
 
 <script>
   const firebaseConfig = {
@@ -65,24 +12,34 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const auth = firebase.auth();
 
-  const collections = [
-    "AD-comments",
-    "General-news",
-    "article-page",
-    "messages",
-    "news-comment",
-    "news-comments",
-    "question-comments",
-    "talents-comments"
-  ];
+  const collectionsMap = {
+    "messages": "رسالة",
+    "news-comments": "أخبار الضاحية",
+    "General-news": "أخبار عامة",
+    "article-page": "أخبار عاجلة",
+    "talents-comments": "مواهب",
+    "clarifications-comments": "إستفسارات",
+    "AD-comments": "إعلانات",
+    "question-comments": "مقالات أهل الضاحية"
+  };
 
-  async function fetchComments() {
+  const collections = Object.keys(collectionsMap);
+
+  async function fetchComments(user) {
     const commentsList = document.getElementById("commentsList");
+    commentsList.innerHTML = ""; // تفريغ القائمة قبل العرض
 
     const allComments = [];
 
-    // جلب التعليقات من جميع المجموعات
+    // جلب دور المستخدم
+    let isAdmin = false;
+    if (user) {
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      isAdmin = userDoc.exists && userDoc.data().role === "admin";
+    }
+
     for (let collectionName of collections) {
       const snapshot = await db.collection(collectionName)
         .orderBy("timestamp", "desc")
@@ -91,20 +48,20 @@
       snapshot.forEach(doc => {
         const data = doc.data();
         const comment = {
+          id: doc.id,
+          collection: collectionName,
           text: data.text,
           imageUrl: data.imageUrl,
           userName: data.userName || "مستخدم مجهول",
-          section: collectionName,
+          section: collectionsMap[collectionName],
           timestamp: data.timestamp?.toDate()
         };
         allComments.push(comment);
       });
     }
 
-    // ترتيب التعليقات من الأحدث إلى الأقدم
     allComments.sort((a, b) => b.timestamp - a.timestamp);
 
-    // عرض التعليقات في الصفحة
     allComments.forEach(comment => {
       const commentDiv = document.createElement("div");
       commentDiv.className = "comment";
@@ -124,12 +81,32 @@
         commentDiv.appendChild(img);
       }
 
+      // زر الحذف للمشرف فقط
+      if (isAdmin) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "🗑 حذف";
+        deleteBtn.style.marginTop = "10px";
+        deleteBtn.style.backgroundColor = "#e53935";
+        deleteBtn.style.color = "white";
+        deleteBtn.style.border = "none";
+        deleteBtn.style.padding = "5px 10px";
+        deleteBtn.style.borderRadius = "5px";
+        deleteBtn.style.cursor = "pointer";
+
+        deleteBtn.onclick = async () => {
+          if (confirm("هل أنت متأكد أنك تريد حذف هذا التعليق؟")) {
+            await db.collection(comment.collection).doc(comment.id).delete();
+            commentDiv.remove();
+          }
+        };
+        commentDiv.appendChild(deleteBtn);
+      }
+
       commentsList.appendChild(commentDiv);
     });
   }
 
-  window.onload = fetchComments;
+  auth.onAuthStateChanged(user => {
+    fetchComments(user);
+  });
 </script>
-
-</body>
-</html>
