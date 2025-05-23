@@ -73,6 +73,8 @@
     "messages",
     "news-comment",
     "news-comments",
+    "urgent-newss",
+    "clarifications",
     "question-comments",
     "talents-comments"
   ];
@@ -111,12 +113,12 @@
 
       const formattedDate = comment.timestamp ? comment.timestamp.toLocaleString("ar-EG") : "غير متوفر";
 
-      commentDiv.innerHTML = 
+      commentDiv.innerHTML = `
         <strong>${comment.userName}</strong><br/>
         ${comment.text || ""}<br/>
         <small>${formattedDate}</small><br/>
         <div class="section-name">القسم: ${comment.section}</div>
-      ;
+      `;
 
       if (comment.imageUrl) {
         const img = document.createElement("img");
@@ -133,5 +135,3 @@
 
 </body>
 </html>
-
-
